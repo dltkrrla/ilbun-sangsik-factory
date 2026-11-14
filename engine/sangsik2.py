@@ -479,6 +479,9 @@ def dwidth(d, s, size, track=0.0):
     return sum(size * 0.25 if ch == " " else d.textlength(ch, font=DF(ch, size)) + size * track for ch in s)
 
 
+SIG_Y = None
+
+
 def signature2(im, t):
     S2 = 2; L = Image.new("RGBA", (W * S2, 220 * S2), (0, 0, 0, 0)); d = ImageDraw.Draw(L)
     size = 104 * S2; wt = dwidth(d, "상식", size, 0.04) / S2
@@ -498,7 +501,7 @@ def signature2(im, t):
     L.alpha_composite(P, (int((x0 + 2 * R + gap) * S2) - (P.width - pw) // 2, int(cy * S2 - P.height / 2)))
     L = L.resize((W, 220), Image.LANCZOS)
     k = back(t / 0.3) if t < 0.3 else 1.0
-    put(im, L, 540, 128 if EP_TITLE else 190, 1.0, 0.7 + 0.3 * k)  # no title line → logo sits lower, in the freed space
+    put(im, L, 540, SIG_Y or (128 if EP_TITLE else 190), 1.0, 0.7 + 0.3 * k)  # no title line → logo sits lower, in the freed space
     if EP_TITLE: put(im, line_img(EP_TITLE, 56), 540, 246, ease((t - 0.1) / 0.2) if t < 0.4 else 1.0)
 
 

@@ -40,8 +40,10 @@ def build(num, name, LINES, T, Q, events, GAP=0.14, qys=(585, 735), qsize=120, s
     seg[0] = 0.0
     CAPS = [(seg[i], seg[i + 1] if i + 1 < len(seg) else DUR, l1, l2) for i, (_, l1, l2, _s) in enumerate(LINES) if l1]
     SC_ = [(seg[i], rel(fn, seg[i])) for i, (*_x, fn) in enumerate(LINES)]
-    EP = Episode(num, T, None, None, SC_, CAPS, events=events(seg), dur=DUR, qhook=(Q, qys, qsize), qend=seg[1], cap_y=(1186, 1290))
-    EP.fit = 0.82; EP.end_y = 1100
+    EP = Episode(num, T, None, None, SC_, CAPS, events=events(seg), dur=DUR, qhook=(Q, qys, qsize), qend=seg[1], cap_y=(1380, 1474))
+    # big layout (2026-11-14, user: "너무 작아"): full-width picture lower on screen, logo below the app header,
+    # captions just under the picture (still above Instagram's caption and YouTube's title area)
+    EP.fit = 1.0; EP.top = 330; EP.sig_y = 212; EP.end_y = 1250
     EP.CLIPS = [(starts[i], os.path.join(VO, f"l{i:02d}.wav")) for i in range(len(LINES))]
     EP.seg, EP.VO, EP.spoken = seg, VO, spoken
     return EP

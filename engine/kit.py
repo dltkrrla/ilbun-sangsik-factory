@@ -11,7 +11,7 @@ from sangsik4 import badge, dashed, lerp, rbox
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 MUSIC = os.path.join(ROOT, "assets", "music", "theme.wav")
-C0 = (1.0, 540, 760)
+C0 = (float(os.environ.get("SANGSIK_ZOOM", "1.15")), 540, 760)  # scene zoom: bigger pictures (2026-11-14: "너무 작아")
 Y_, W_ = YEL, WHITE
 SKIN = (255, 216, 178)
 
@@ -101,17 +101,22 @@ class Episode:
                 return Image.blend(self.draw(s - 0.001), self.draw(t), eio((t - s) / 0.26))
         return self.draw(t)
 
+    @property
+    def ptop(self):
+        return getattr(self, 'top', IY0 + SHIFT)
+
     def frame(self, t):
+        b.SIG_Y = getattr(self, 'sig_y', None)
         b.DUR = self.dur; b.EP_TITLE = self.title if getattr(self, 'show_title', False) else None  # no title line: it spoiled the hook
         im = BG.copy()
         k = getattr(self, "fit", 1.0)
         if k == 1.0:
-            im.paste(self.illus(t).reduce(SC), (0, IY0 + SHIFT), ILL_MASK)
+            im.paste(self.illus(t).reduce(SC), (0, self.ptop), ILL_MASK)
         else:
             nw, nh = round(W * k), round(IH * k)
             il = self.illus(t).resize((nw, nh), Image.LANCZOS)
             self._fm = ILL_MASK.resize((nw, nh), Image.LANCZOS)
-            self._fo = ((W - nw) // 2, IY0 + SHIFT)
+            self._fo = ((W - nw) // 2, self.ptop)
             im.paste(il, self._fo, self._fm)
         im = im.convert("RGBA")
         signature2(im, max(t, 0.45) if self.qhook else t)
@@ -120,12 +125,22 @@ class Episode:
         elif t < 1.52:
             a = min(1, t / 0.08) * (1 - ease((t - 1.36) / 0.14))
             ov = Image.new("RGBA", (W, IH), (8, 12, 28, 255)); ov.putalpha(ILL_MASK.point(lambda v: int(v * 0.52 * a)))
-            im.alpha_composite(ov, (0, IY0 + SHIFT))
+            im.alpha_composite(ov, (0, self.ptop))
         if not self.qhook:
             kinetic(im, t, 0.0, 1.5, self.hook1, (690, 850), 128, stagger=0.17, slam=0.9)
             kinetic(im, t, 1.4, 3.6, self.hook2, (1388, 1500), 84, stagger=0.13, slam=0.5)
         if t >= self.dur - 1.8:
             put(im, box_img("구독하면 매일 1분 상식", 50, YEL, INK, pad=38), 540, getattr(self, "end_y", 1252), 1.0, 0.6 + 0.4 * back((t - self.dur + 1.8) / 0.28))
+        if getattr(self, "cap_shade", False) and any(t0 <= t < t1 for t0, t1, *_ in self.caps):
+            # captions sit on the lower part of the picture: darken under them so they stay readable
+            y0, y1 = self.cap_y[0] - 110, self.cap_y[1] + 75
+            g = Image.new("RGBA", (W, y1 - y0), (0, 0, 0, 0)); gd = ImageDraw.Draw(g)
+            for yy in range(y1 - y0):
+                a = int(170 * min(1, yy / 70))
+                gd.line([(0, yy), (W, yy)], fill=(8, 12, 28, a))
+            if getattr(self, "fit", 1.0) == 1.0:
+                g.putalpha(Image.fromarray((np.array(g.split()[3]) * (np.array(ILL_MASK.crop((0, y0 - self.ptop, W, y1 - self.ptop))) / 255)).astype("uint8")))
+            im.alpha_composite(g, (0, y0))
         for t0, t1, l1, l2 in self.caps:
             if t0 <= t < t1:
                 a_out = 1 - ease((t - (t1 - 0.12)) / 0.12) if t1 < self.dur else 1
@@ -145,7 +160,7 @@ class Episode:
             im.alpha_composite(ov, self._fo)
         else:
             ov = Image.new("RGBA", (W, IH), (8, 12, 28, 255)); ov.putalpha(ILL_MASK.point(lambda v: int(v * 0.42 * out)))
-            im.alpha_composite(ov, (0, IY0 + SHIFT))
+            im.alpha_composite(ov, (0, self.ptop))
         rows, ys, size = self.qhook
         tmp = ImageDraw.Draw(Image.new("RGBA", (4, 4))); f = F(size); idx = 0
         for words, cy in zip(rows, ys):
@@ -156,7 +171,7 @@ class Episode:
                 sc = 1 + 0.1 * (1 - ease(max(0, lt) / 0.22))
                 if any(c == YEL for _, c in w):
                     sc *= 1 + 0.05 * math.sin(t * 14)
-                put(im, line_img(tuple(w), size), x + ww / 2, cy, out, sc)
+                put(im, line_img(tuple(w), size), x + ww / 2, cy + self.ptop - (IY0 + SHIFT), out, sc)
                 x += ww + sp
 
     # ───────── sound ─────────
