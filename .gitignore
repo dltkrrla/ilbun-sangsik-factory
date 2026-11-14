@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+work/
+out/
+vo/
+prev/
+sz/
+*.part.mp4
+*_sfx.wav
+*_mix.wav
+models/
