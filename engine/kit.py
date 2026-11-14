@@ -102,7 +102,7 @@ class Episode:
         return self.draw(t)
 
     def frame(self, t):
-        b.DUR = self.dur; b.EP_TITLE = self.title
+        b.DUR = self.dur; b.EP_TITLE = self.title if getattr(self, 'show_title', False) else None  # no title line: it spoiled the hook
         im = BG.copy()
         k = getattr(self, "fit", 1.0)
         if k == 1.0:

@@ -402,7 +402,7 @@ def signature(im, t):
     L = L.resize((W, 300), Image.LANCZOS)
     k = back(t / 0.3) if t < 0.3 else 1.0
     put(im, L, 540, 150, 1.0, 0.7 + 0.3 * k)
-    put(im, line_img(EP_TITLE, 56), 540, 246, ease((t - 0.1) / 0.2) if t < 0.4 else 1.0)
+    if EP_TITLE: put(im, line_img(EP_TITLE, 56), 540, 246, ease((t - 0.1) / 0.2) if t < 0.4 else 1.0)
 
 
 def kinetic(im, t, t0, t1, rows, ys, size, stagger=0.13, slam=0.7, out=0.13):
@@ -499,7 +499,7 @@ def signature2(im, t):
     L = L.resize((W, 220), Image.LANCZOS)
     k = back(t / 0.3) if t < 0.3 else 1.0
     put(im, L, 540, 128, 1.0, 0.7 + 0.3 * k)
-    put(im, line_img(EP_TITLE, 56), 540, 246, ease((t - 0.1) / 0.2) if t < 0.4 else 1.0)
+    if EP_TITLE: put(im, line_img(EP_TITLE, 56), 540, 246, ease((t - 0.1) / 0.2) if t < 0.4 else 1.0)
 
 
 # ───────── sound effects ─────────
