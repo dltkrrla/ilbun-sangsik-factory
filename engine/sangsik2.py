@@ -498,7 +498,7 @@ def signature2(im, t):
     L.alpha_composite(P, (int((x0 + 2 * R + gap) * S2) - (P.width - pw) // 2, int(cy * S2 - P.height / 2)))
     L = L.resize((W, 220), Image.LANCZOS)
     k = back(t / 0.3) if t < 0.3 else 1.0
-    put(im, L, 540, 128, 1.0, 0.7 + 0.3 * k)
+    put(im, L, 540, 128 if EP_TITLE else 190, 1.0, 0.7 + 0.3 * k)  # no title line → logo sits lower, in the freed space
     if EP_TITLE: put(im, line_img(EP_TITLE, 56), 540, 246, ease((t - 0.1) / 0.2) if t < 0.4 else 1.0)
 
 
