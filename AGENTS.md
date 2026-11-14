@@ -9,6 +9,7 @@
 4. **에피소드 파일**: `episodes/ep18.py`를 본보기로 `episodes/epNN.py` 작성 (NN = 다음 번호).
    - LINES(자막 2줄 + 장면 함수), SPOKEN, EMOTIONS, BREATHS, T(제목), Q(첫 질문), EV(효과음)
    - 장면은 kit의 panel/emo/pill/txt/rr/circ/rings/kpop/badge로 그린다.
+4-1. **첫 3초 점검** (플레이북 "첫 3초 체크리스트" H1~H7): 첫 문장에 인사·호칭이 없는가, 단정·반전·손실형인가, 0초 화면이 움직이고 답의 단서가 보이는가, 3초 안에 첫 답이 나오는가, 1.5~2초마다 화면이 바뀌는가. 하나라도 아니면 고친 뒤 진행. 이번 편의 "바꿀 것 1개"는 플레이북 "다음 영상 방향"을 따르고 나머지는 지난 편과 같게 둔다.
 5. **정지 화면 확인**: `cd episodes && PYTHONPATH=../engine python3 -c` 로 `EP.frame(t)`를 장면마다 저장해 직접 보고, 겹침·잘림·빈 화면을 고친다.
 6. **제작**: `python3 engine/make.py episodes/epNN.py out/epNN.mp4`. ASR_LOW_LINES가 있으면 그 줄을 고쳐 다시.
 7. **보관**: 완성 영상을 릴리스 `videos`에 올린다:
