@@ -12,9 +12,8 @@
 4-1. **첫 3초 점검** (플레이북 "첫 3초 체크리스트" H1~H7): 첫 문장에 인사·호칭이 없는가, 단정·반전·손실형인가, 0초 화면이 움직이고 답의 단서가 보이는가, 3초 안에 첫 답이 나오는가, 1.5~2초마다 화면이 바뀌는가. 하나라도 아니면 고친 뒤 진행. 이번 편의 "바꿀 것 1개"는 플레이북 "다음 영상 방향"을 따르고 나머지는 지난 편과 같게 둔다.
 5. **정지 화면 확인**: `cd episodes && PYTHONPATH=../engine python3 -c` 로 `EP.frame(t)`를 장면마다 저장해 직접 보고, 겹침·잘림·빈 화면을 고친다.
 6. **제작**: `python3 engine/make.py episodes/epNN.py out/epNN.mp4`. ASR_LOW_LINES가 있으면 그 줄을 고쳐 다시.
-7. **보관**: 완성 영상을 릴리스 `videos`에 올린다:
-   `gh release upload videos out/epNN.mp4 --repo dltkrrla/ilbun-sangsik-factory --clobber`
-   공개 링크: `https://github.com/dltkrrla/ilbun-sangsik-factory/releases/download/videos/epNN.mp4`
+7. **보관**: 완성 영상을 `videos/epNN.mp4`로 복사해 커밋·푸시한다 (GitHub 릴리스 생성은 이 환경에서 막혀 있음).
+   공개 링크: `https://raw.githubusercontent.com/dltkrrla/ilbun-sangsik-factory/main/videos/epNN.mp4`
 8. **게시 초안**: `vidiq_video_upload`(url=위 링크) → `vidiq_social_post_draft_create`
    - YouTube `UC7oUcUyROSN66ppccV13ndA`: 제목, 설명, 태그, privacyStatus public, publishAt 당일 18:30 KST
    - Instagram `28745912421778128`: 캡션 + 해시태그

@@ -165,6 +165,8 @@ class Episode:
         def add(at, sig):
             i = int(at * sr)
             if i >= n: return
+            if i < 0:
+                sig = sig[-i:]; i = 0
             sig = sig[: n - i]; x[i:i + len(sig)] += sig
         def env(m, dd): return np.exp(-np.arange(m) / sr / dd)
         def pop(at, f0=620, vol=.22):
