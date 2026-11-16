@@ -16,6 +16,7 @@ EMO = {
     "disgust":   dict(shift=-0.8, rng=1.3,  slope=-1.5, tail=0,    tempo=0.92, gain=1,  bright=0.5,  jitter=0.25, breathy=0.15),
     "secret":    dict(shift=-1.0, rng=0.85, slope=0,    tail=0,    tempo=0.94, gain=-2, bright=-0.5, jitter=0,    breathy=0.45),
     "bright":    dict(shift=1.4,  rng=1.45, slope=0,    tail=0.8,  tempo=1.03, gain=1,  bright=0.8,  jitter=0,    breathy=0),
+    "steady":    dict(shift=0,    rng=1.3,  slope=-0.5, tail=0,    tempo=1.0,  gain=0,  bright=0.3,  jitter=0,    breathy=0),
     "explain":   dict(shift=0,    rng=1.3,  slope=-0.8, tail=0,    tempo=1.0,  gain=0,  bright=0,    jitter=0,    breathy=0),
 }
 
