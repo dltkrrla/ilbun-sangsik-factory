@@ -246,6 +246,15 @@ F_ = scene("F")
 F10 = coin(F_, R10, 0.0013, 0, M["copper"], "10"); stand(F10, -0.014, 0, R10, yaw=62)
 F5 = coin(F_, R5, TH, 120, M["nickel"], "500"); stand(F5, 0.013, 0, R5, yaw=62)
 
+# G: old clipped silver coins (plain edge) on the left -> new reeded coins on the right
+G_ = scene("G")
+for i, (x, y, yaw, cuts) in enumerate(((-0.04, 0.014, 10, [(30, 0.0015), (140, 0.0016), (250, 0.0014)]), (-0.028, -0.017, 80, [(60, 0.0016), (200, 0.0015)]), (-0.062, -0.012, 200, [(100, 0.0015), (220, 0.0016), (330, 0.0014)]))):
+    cg = coin(G_, R5, 0.0017, 0, M["nickel"], "", cuts=cuts, style="old"); lay(cg, x, y, 0.0017, yaw=yaw)
+for i in range(5):
+    cg = coin(G_, R5, TH, 120, M["nickel"], "", style="old")
+    cg.location = (0.03 + 0.0005 * math.sin(i * 2.1), 0.004, TH / 2 + 0.0002 + i * (TH + 0.00034)); cg.rotation_euler = (0, 0, i * 0.7)
+G_ST = coin(G_, R5, TH, 120, M["nickel"], "", style="old"); stand(G_ST, 0.034, -0.028, R5, yaw=55)
+
 PTS = {}
 def shot(name, only, points=None, hide=(), show=()):
     if ONLY and not name.startswith(ONLY):
@@ -291,6 +300,8 @@ aim((0.012, -0.21, 0.075), (0.008, 0, 0.027), 62, 9); shot("newton", E, dict(app
 # F
 aim((0.0, -0.085, 0.024), (0, 0, 0.011), 70, 9)
 shot("ten", F_, dict(c10=(-0.014, 0, 2 * R10), c500=(0.013, 0, 2 * R5), b10=(-0.014, 0, 0), b500=(0.013, 0, 0)))
+aim((-0.01, -0.15, 0.125), (-0.012, -0.004, 0.004), 55, 9)
+shot("swap", G_, dict(old=(-0.042, 0.0, 0.002), new=(0.03, 0.0, 0.012)))
 f = os.path.join(OUT, "points.json")
 d = json.load(open(f)) if os.path.exists(f) else {}
 d.update(PTS); json.dump(d, open(f, "w"))
