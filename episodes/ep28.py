@@ -70,13 +70,19 @@ def smell(im, x, y, r, a=1.0, col=(150, 230, 140)):
     im.alpha_composite(L)
 
 
+def win_c(cx, cy, s, row, col):  # window centre: 5 columns centred on the building
+    return cx + (col - 2) * 130 * s, cy - 55 * s + row * 140 * s
+
+
 def school(d, cx, cy, s, crack=0.0):
     rr(d, C0, cx - 330 * s, cy - 150 * s, cx + 330 * s, cy + 230 * s, 8, fill=(196, 150, 110, 255))
     d.polygon([cxy(C0, cx - 360 * s, cy - 150 * s), cxy(C0, cx, cy - 300 * s), cxy(C0, cx + 360 * s, cy - 150 * s)], fill=(150, 70, 60, 255))
     for row in range(2):
         for col in range(5):
-            x = cx - 260 * s + col * 130 * s; y = cy - 100 * s + row * 140 * s
-            rr(d, C0, x, y, x + 80 * s, y + 90 * s, 6, fill=(250, 226, 140, 255) if crack < 0.5 else (60, 50, 50, 255))
+            if row == 1 and col == 2:
+                continue  # door sits here
+            wx, wy = win_c(cx, cy, s, row, col)
+            rr(d, C0, wx - 40 * s, wy - 45 * s, wx + 40 * s, wy + 45 * s, 6, fill=(250, 226, 140, 255) if crack < 0.5 else (60, 50, 50, 255))
     rr(d, C0, cx - 50 * s, cy + 110 * s, cx + 50 * s, cy + 230 * s, 6, fill=(110, 70, 50, 255))
     # basement strip
     rr(d, C0, cx - 330 * s, cy + 230 * s, cx + 330 * s, cy + 330 * s, 0, fill=(80, 70, 70, 255))
@@ -140,8 +146,10 @@ def sSchool(r, im, d):  # 진짜 이유: 1937 미국 학교
     pill(d, C0, 540, 400, "1937년 미국 텍사스", 54, YEL, INK, sc=kpop(r, 0.1))
     if r > 1.0:
         pill(d, C0, 540, 1170, "한 학교", 50, WHITE, INK, sc=kpop(r, 1.0))
-    for i, x in enumerate((280, 410, 670, 800)):
-        emo(im, x, 690, 80 * kpop(r, 2.0 + 0.2 * i, .25), "🧒")
+    s = 1.0 + 0.04 * r
+    for i, col in enumerate((0, 1, 3, 4)):  # one child in each top-row window
+        wx, wy = win_c(540, 760, s, 0, col)
+        emo(im, wx, wy + 4 * s, 70 * s * kpop(r, 2.0 + 0.2 * i, .25), "🧒")
 
 
 def sLeak(r, im, d):  # 새는 가스를 아무도 못 맡음 → 폭발 → 약 300명
