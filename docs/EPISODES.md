@@ -20,3 +20,5 @@
 | 18 | 흰머리는 왜 생길까 | 구연동화판 완성 | NYU 2023 Nature, Columbia 2021 eLife |
 | 19 | 수능 날 공항이 35분 멈추는 이유 | 제작 완료 (첫 3초 포맷 H1~H6 첫 적용) | 국토부: 13:05~13:40 이륙 금지·3km 대기, 작년 140편 조정 (헤럴드경제 2025-11-10) · 2027 수능 11/19, 551,864명 (korea.kr) |
 | 25 | 동전 옆면 톱니는 왜 있을까 | 예약 (유튜브 11/18 18:30 ZE-Q9Ghs7Bk, 인스타 19:30) · 전부 3D 36.6초 | 50원 109·100원 110·500원 120개, 금·은화 깎기 방지 (한국은행 주화 이야기) · 뉴턴 1696 조폐국 감사, 대개주·위조범 추적, 톱니 기술은 블롱도 (newtonandthemint.history.ox.ac.uk) |
+| 26 | 운동화 맨 위 남는 구멍(힐락) | 제작 (videos/ep26.mp4, 평면 일러스트) | Reader's Digest, HuffPost UK, Gear Patrol |
+| 27 | 줄자 끝 쇠고리가 헐렁한 이유 | 제작 완료, 게시 승인 대기 (2D, 34.2초, 아레나 첫 우승작 대신 준우승 — 아래 ARENA 참고) | 고리 두께만큼 움직여 걸기/밀기 측정 보정: This Old House (thisoldhouse.com/tools/21015038/what-makes-it-wiggle), Mental Floss (1/16인치 = 고리 두께), Pro Tool Reviews |
