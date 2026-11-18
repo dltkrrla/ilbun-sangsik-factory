@@ -80,8 +80,8 @@ def school(d, cx, cy, s, crack=0.0):
     rr(d, C0, cx - 50 * s, cy + 110 * s, cx + 50 * s, cy + 230 * s, 6, fill=(110, 70, 50, 255))
     # basement strip
     rr(d, C0, cx - 330 * s, cy + 230 * s, cx + 330 * s, cy + 330 * s, 0, fill=(80, 70, 70, 255))
-    d.line([cxy(C0, cx, cy - 300 * s), cxy(C0, cx, cy - 400 * s)], fill=(230, 230, 230, 255), width=6)
-    d.polygon([cxy(C0, cx, cy - 400 * s), cxy(C0, cx + 80 * s, cy - 380 * s), cxy(C0, cx, cy - 360 * s)], fill=(240, 72, 72, 255))
+    d.line([cxy(C0, cx, cy - 300 * s), cxy(C0, cx, cy - 345 * s)], fill=(230, 230, 230, 255), width=6)
+    d.polygon([cxy(C0, cx, cy - 345 * s), cxy(C0, cx + 60 * s, cy - 330 * s), cxy(C0, cx, cy - 315 * s)], fill=(240, 72, 72, 255))
 
 
 def gasfog(im, cx, cy, r, k, col=GASC, a0=110):
