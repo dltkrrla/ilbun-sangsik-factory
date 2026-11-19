@@ -24,6 +24,15 @@ if [ ! -f "$MODELS/tts/vocoder.onnx" ] || [ ! -f "$MODELS/asr/model.int8.onnx" ]
     ln -sf "$MODELS/$A/model.int8.onnx" asr/model.int8.onnx; ln -sf "$MODELS/$A/tokens.txt" asr/tokens.txt
   fi
 fi
+# 2026-11-19: the models-v1 release ships a corrupted SenseVoice ASR (md5 7cf0eec0…) that mis-hears every Korean line
+# (garbage/Chinese output -> ASR scores 0 and take selection is random). Replace it with the official k2-fsa file.
+ASR_OK=0e8e550411d3589be9f0af06f1c8fec3
+if [ "$(md5sum "$MODELS/asr/model.int8.onnx" | cut -d' ' -f1)" != "$ASR_OK" ]; then
+  echo "ASR model corrupted -> fetching official SenseVoice int8"
+  A=sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17
+  (cd "$MODELS" && curl -fsSL "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/$A.tar.bz2" | tar xj)
+  rm -f "$MODELS/asr/model.int8.onnx"; ln -s "$MODELS/$A/model.int8.onnx" "$MODELS/asr/model.int8.onnx"
+fi
 # engine defaults to /home/claude/models
 [ -e /home/claude/models ] || ln -sfn "$MODELS" /home/claude/models
 echo "ready: models in $MODELS"
