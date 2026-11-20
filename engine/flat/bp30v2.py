@@ -153,12 +153,11 @@ def wave(t):
             n += 1
     if t > 1.85:
         kk = back((t - 1.85) / 0.35); a = ease((t - 1.85) / 0.12)
-        callout(c, W / 2, 1200, "멈춰 선 파도", 64, YEL, a, 0.7 + 0.3 * kk)
-        c.text(W / 2, 1268, "제자리에서 출렁이며 센 곳·약한 곳이 생겨요", 30, LINE, ease((t - 2.2) / 0.3))
+        callout(c, W / 2, 1190, "멈춰 선 파도", 66, YEL, a, 0.7 + 0.3 * kk)
     if t > 2.1:
         a = ease((t - 2.1) / 0.3)
-        c.circle(200, 1325, 11, fill=COLD, a=a); c.text(222, 1325, "안 움직이는 점", 28, LINE, a, anchor="lm")
-        c.circle(560, 1325, 11, outline=HOT, w=4, a=a); c.text(582, 1325, "가장 센 점", 28, LINE, a, anchor="lm")
+        c.circle(200, 335, 11, fill=COLD, a=a); c.text(222, 335, "안 움직이는 점", 30, LINE, a, anchor="lm")
+        c.circle(560, 335, 11, outline=HOT, w=4, a=a); c.text(582, 335, "가장 센 점", 30, LINE, a, anchor="lm")
     return intro_fade(c.compose(base), t).convert("RGB")
 
 # =====================================================================
