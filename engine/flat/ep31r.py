@@ -19,6 +19,7 @@ DUR = NB[-1]
 b.DUR = DUR
 b.EP_TITLE = ((" ", WHITE),)
 RED = (235, 70, 50)
+Q_END = 1.45                       # 여는 질문이 떠 있는 시간
 Y_, W_ = YEL, WHITE
 CAPS = [
     None,
@@ -49,13 +50,21 @@ def pop(im, t, t0, img, x, y):
 
 def overlay(t):
     im = GRAD.copy()
+    if t < Q_END:                      # 여는 질문 동안 화면을 살짝 어둡게 (로고는 그대로 밝게)
+        a = min(1, t / 0.08) * (1 - ease((t - (Q_END - 0.16)) / 0.16))
+        im.alpha_composite(Image.new("RGBA", (W, H), (8, 12, 28, int(130 * a))))
     signature2(im, t)
     s = NB
     # 0: 첫 문장 + 큰 5
     if t < s[1]:
-        kinetic(im, t, 0.0, s[1], [[[("콜라병", WHITE)], [("바닥", WHITE)]], [[("꽃잎이", WHITE)], [("5개", YEL)]]], (1388, 1500), 92, stagger=0.14, slam=0.6)
-        k = ease(t / 0.18); a_out = 1 - ease((t - (s[1] - 0.2)) / 0.2)
-        put(im, line_img((("5", YEL),), 260), 840, 1130, k * a_out, (1 + 0.15 * (1 - ease(t / 0.25))) * (1 + 0.03 * math.sin(t * 9)))
+        # 여는 질문: 화면을 살짝 어둡게 깔고 한 단어씩 '쾅' (채널 시그니처 오프닝)
+        kinetic(im, t, 0.0, Q_END, [[[("콜라병", WHITE)], [("바닥은", WHITE)]], [[("왜", WHITE)], [("꽃 모양", YEL)], [("일까요?", WHITE)]]],
+                (800, 940), 100, stagger=0.15, slam=0.9, out=0.16)
+        kinetic(im, t, Q_END - 0.05, s[1], [[[("콜라병", WHITE)], [("바닥", WHITE)]], [[("꽃잎이", WHITE)], [("5개", YEL)]]], (1388, 1500), 92, stagger=0.1, slam=0.6)
+        t5 = t - (Q_END + 0.1)
+        if t5 >= 0:
+            k = ease(t5 / 0.18); a_out = 1 - ease((t - (s[1] - 0.2)) / 0.2)
+            put(im, line_img((("5", YEL),), 260), 840, 1130, k * a_out, (1 + 0.15 * (1 - ease(t5 / 0.25))) * (1 + 0.03 * math.sin(t * 9)))
     if s[1] <= t < s[2]:
         pop(im, t, s[1] + 0.2, box_img("생수병 = 평평", 52, WHITE, INK, pad=34), 300, 520)
         pop(im, t, s[1] + 1.1, box_img("탄산 = 꽃 모양", 52, YEL, INK, pad=34), 780, 620)
@@ -96,7 +105,7 @@ def audio(path):
     def ding(at, f=1320, vol=.16):
         m = int(.7 * sr); tt = np.arange(m) / sr; add(at, vol * (np.sin(2 * np.pi * f * tt) + .4 * np.sin(2 * np.pi * f * 2.01 * tt)) * env(m, .22))
     s = NB
-    thud(0.05, .45); popf(0.9, 900, .22)
+    thud(0.05, .45); popf(0.2, 760, .14); popf(0.65, 1000, .2); popf(Q_END + 0.1, 900, .22)
     for i in range(1, len(s) - 1):
         whoosh(s[i]); popf(s[i] + 0.05, 820, .16)
     popf(s[1] + 0.2); popf(s[1] + 1.1, 950); thud(s[2] + 2.55, .4); ding(s[2] + 2.6, 990)   # 압력계
