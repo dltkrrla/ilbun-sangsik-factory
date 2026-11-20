@@ -8,15 +8,18 @@ enc="-c:v libx264 -crf 16 -preset veryfast -pix_fmt yuv420p"
 kb() { # name img frames z0 z1 fx fy
   ffmpeg -v error -y -loop 1 -i "$2" -vf "scale=2256:4032:flags=lanczos,zoompan=z='$4+($5-$4)*(1-cos(PI*on/$3))/2':x='(iw-iw/zoom)*$6':y='(ih-ih/zoom)*$7':d=1:s=1080x1920:fps=30,setsar=1" -frames:v $3 $enc "$1.tmp.mp4" && mv "$1.tmp.mp4" "$1.mp4"
 }
+up() { # name img frames shift: 사진을 위로 올려 핵심(바닥)이 자막에 안 가리게, 아래는 흐린 배경
+  ffmpeg -v error -y -loop 1 -i "$2" -filter_complex "[0:v]scale=1080:1930,split[a][b];[b]scale=1080:1920,boxblur=40:3,eq=brightness=-0.08[bg];[bg][a]overlay=0:'-$4+40-80*n/$3',setsar=1,fps=30" -frames:v $3 $enc "$1.tmp.mp4" && mv "$1.tmp.mp4" "$1.mp4"
+}
 seg() { # name src start dur
   ffmpeg -v error -y -ss "$3" -i "$2" -an -vf "$V,tpad=stop_mode=clone:stop_duration=3,trim=duration=$4" $enc "$1.tmp.mp4" && mv "$1.tmp.mp4" "$1.mp4"
 }
 kb k0 img/i4.png 77 1.0 1.25 0.5 0.5
 kb k1 img/i1.png 126 1.0 1.15 0.5 0.4
 seg k2 v0.mp4 0.2 4.50
-kb k3 img/i3.png 131 1.0 1.15 0.45 0.75
+up k3 img/i3.png 131 360
 kb k4 img/i0.png 129 1.0 1.25 0.35 0.6
-kb k5 img/i5.png 134 1.0 1.15 0.5 0.75
+up k5 img/i5.png 134 380
 kb k6 img/i6.png 98 1.0 1.15 0.6 0.4
 kb k7 img/i4.png 86 1.25 1.0 0.5 0.5
 printf "file '%s'\n" k0.mp4 k1.mp4 k2.mp4 k3.mp4 k4.mp4 k5.mp4 k6.mp4 k7.mp4 > list.txt
