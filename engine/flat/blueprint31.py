@@ -66,16 +66,19 @@ def bottle_layer(f):
             d.line((CX, y, CX, y + 18), fill=CYAN + (110,), width=2)
     return L
 
-CUP_TOP, CUP_BOT, CUP_W = 975, 1255, 430
-def cup_layer(off):
-    L = Image.new("RGBA", (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(L)
-    x0, x1 = CX - CUP_W // 2, CX + CUP_W // 2; y0, y1 = CUP_TOP + off, CUP_BOT + off
+CUP_TOP, CUP_BOT, CUP_W = 1085, 1255, 430
+GROUND = CUP_BOT                       # 바닥(식탁) 선
+LIFT = 170                              # 받침을 끼우려고 병을 들어 올리는 높이
+
+def cup_layer(offx):
+    L = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    x0, x1 = CX - CUP_W // 2 + offx, CX + CUP_W // 2 + offx
     m = Image.new("L", (W, H), 0); md = ImageDraw.Draw(m)
-    md.rounded_rectangle((x0, y0, x1, y1), 18, fill=255)
-    md.ellipse((CX - R - 4, BY - R - 4 + off, CX + R + 4, BY + R + 4 + off), fill=0)    # 반구 모양으로 파인 윗면
+    md.rounded_rectangle((x0, CUP_TOP, x1, CUP_BOT), 18, fill=255)
+    md.ellipse((CX + offx - R - 4, BY - R - 4, CX + offx + R + 4, BY + R + 4), fill=0)     # 반구 모양으로 파인 윗면
     hatch = Image.new("RGBA", (W, H), (0, 0, 0, 0)); hd = ImageDraw.Draw(hatch)
     for k in range(-H, W + H, 26):
-        hd.line((k, y1 + 10, k + (y1 - y0 + 20), y0 - 10), fill=YEL + (120,), width=3)
+        hd.line((k, CUP_BOT + 10, k + (CUP_BOT - CUP_TOP + 20), CUP_TOP - 10), fill=YEL + (120,), width=3)
     L.paste(hatch, (0, 0), m)
     edge = m.filter(ImageFilter.FIND_EDGES).point(lambda v: 255 if v > 40 else 0).filter(ImageFilter.MaxFilter(5))
     L.paste(Image.new("RGBA", (W, H), YEL + (255,)), (0, 0), edge)
@@ -86,54 +89,61 @@ def label(d, text, x, y, size, col, anchor="lm", a=1.0):
     c = col + (int(255 * a),)
     d.text((x, y), text, font=F(size), fill=c, anchor=anchor, stroke_width=6, stroke_fill=(8, 26, 52, int(255 * a)))
 
+def ground(d, a):
+    if a <= 0: return
+    d.line((110, GROUND, 970, GROUND), fill=LINE + (int(200 * a),), width=4)
+    for x in range(120, 970, 34):
+        d.line((x, GROUND + 4, x - 22, GROUND + 26), fill=LINE + (int(90 * a),), width=2)
+
 def frame(t):
     im = GRID.copy().convert("RGBA")
     a_grid = ease(t / 0.3)
     if a_grid < 1:
         im = Image.blend(Image.new("RGBA", (W, H), (6, 22, 46, 255)), im, a_grid)
     d = ImageDraw.Draw(im)
-    label(d, "DWG. 31-B  |  옛날 2L 콜라병", 70, 250, 34, CYAN, a=ease((t - 0.1) / 0.3))
-    # 1) 병 그리기
+    label(d, "DWG. 31-B  |  옛날 2L 콜라병", 70, 250, 34, CYAN, a=ease((t - 0.1) / 0.3) * (1 - ease((t - 2.2) / 0.15)) + ease((t - 3.05) / 0.3) * (t > 3))
+    ground(d, ease((t - 0.2) / 0.3))
     f = ease(t / 1.1)
-    # 2) 흔들림: 1.3초부터 흔들리다 받침이 끼워지는 2.9초쯤 멈춤
+    # 흔들림: 둥근 바닥이 식탁 위를 굴러가듯 좌우로 (1.2~2.3초), 그 뒤 멈춤
     rock = 0.0
-    if 1.3 <= t:
-        amp = 9 * ease((t - 1.3) / 0.25) * (1 - ease((t - 2.55) / 0.35))
-        rock = amp * math.sin((t - 1.3) * 2 * math.pi * 1.6)
+    if t >= 1.2:
+        amp = 10 * ease((t - 1.2) / 0.2) * (1 - ease((t - 2.0) / 0.3))
+        rock = amp * math.sin((t - 1.2) * 2 * math.pi * 1.5)
+    # 높이: 처음엔 바닥에 닿음(+25) → 들어 올림 → 받침 속으로 내려앉음(0)
+    dy = (GROUND - (BY + R))
+    dy += (-(GROUND - (BY + R)) - LIFT) * ease((t - 2.3) / 0.3)
+    dy += LIFT * ease((t - 2.8) / 0.15)
+    dx = -R * math.radians(rock)                    # 구르기: 기울어진 만큼 옆으로 이동
     B = bottle_layer(f)
-    if abs(rock) > 0.05:
-        B = B.rotate(rock, resample=Image.BICUBIC, center=(CX, BY + R))
-    # 3) 받침이 아래에서 올라옴
-    cup_k = back((t - 2.35) / 0.55)
-    if t >= 2.35:
-        off = int((1 - cup_k) * 520)
-        im.alpha_composite(cup_layer(off))
+    if abs(rock) > 0.05 or abs(dy) > 0.5:
+        B = B.rotate(rock, resample=Image.BICUBIC, center=(CX, BY), translate=(dx, dy))
+    # 받침: 옆에서 미끄러져 들어옴
+    if t >= 2.4:
+        offx = int(-(1 - ease((t - 2.4) / 0.4)) * 700)
+        im.alpha_composite(cup_layer(offx))
     im.alpha_composite(B)
     d = ImageDraw.Draw(im)
-    # 라벨: 둥근 바닥
-    a1 = ease((t - 0.95) / 0.25) * (1 - ease((t - 2.4) / 0.2))
+    a1 = ease((t - 0.95) / 0.25) * (1 - ease((t - 2.2) / 0.2))
     if a1 > 0:
-        d.line((CX + 150, BY + 120, 830, 1130), fill=CYAN + (int(255 * a1),), width=3)
+        d.line((CX + 150 + dx, BY + 120 + dy, 830, 1130), fill=CYAN + (int(255 * a1),), width=3)
         label(d, "둥근 바닥", 842, 1130, 50, LINE, a=a1)
-    # 흔들 화살표 + '혼자 못 서요'
-    a2 = ease((t - 1.35) / 0.2) * (1 - ease((t - 2.45) / 0.2))
+    a2 = ease((t - 1.25) / 0.2) * (1 - ease((t - 2.25) / 0.2))
     if a2 > 0:
         for sgn in (-1, 1):
             cx0 = CX + sgn * 300
             d.arc((cx0 - 70, 640, cx0 + 70, 780), 200 if sgn < 0 else -20, 340 if sgn < 0 else 160, fill=RED + (int(255 * a2),), width=8)
         label(d, "흔들흔들", 890, 390, 46, RED, anchor="mm", a=a2)
         label(d, "혼자 못 서요", 890, 455, 46, RED, anchor="mm", a=a2)
-    # 딱! + 받침 라벨
-    if t >= 2.85:
-        k = ease((t - 2.85) / 0.15)
-        flash = max(0.0, 1 - (t - 2.85) / 0.35)
+    if t >= 2.95:
+        k = ease((t - 2.95) / 0.15)
+        flash = max(0.0, 1 - (t - 2.95) / 0.35)
         if flash > 0:
             d.ellipse((CX - 300 * k, 1110 - 120 * k, CX + 300 * k, 1110 + 120 * k), outline=YEL + (int(220 * flash),), width=6)
-        label(d, "딱!", 860, 960, int(78 * (0.7 + 0.3 * back((t - 2.85) / 0.25))), YEL, anchor="mm", a=k)
-        a3 = ease((t - 3.05) / 0.25)
+        label(d, "딱!", 860, 960, int(78 * (0.7 + 0.3 * back((t - 2.95) / 0.25))), YEL, anchor="mm", a=k)
+        a3 = ease((t - 3.1) / 0.25)
         d.line((CX - CUP_W // 2 + 30, 1180, 200, 1180), fill=YEL + (int(255 * a3),), width=3)
         label(d, "받침", 70, 1180, 56, YEL, a=a3)
-        a4 = ease((t - 3.35) / 0.3)
+        a4 = ease((t - 3.4) / 0.3)
         label(d, "똑바로 선다!", 880, 420, 50, LINE, anchor="mm", a=a4)
     return im.convert("RGB")
 

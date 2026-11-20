@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw
 import sangsik2 as b
 from sangsik2 import *
 
-VO = "/home/claude/work/vo31"
+VO = "/home/claude/work/vo31b"
 VOD = json.load(open(f"{VO}/meta.json"))
 NB = [0.0]
 for d in VOD:
@@ -22,9 +22,9 @@ RED = (235, 70, 50)
 Y_, W_ = YEL, WHITE
 CAPS = [
     None,
-    ([("생수병은 ", W_), ("평평", Y_), ("한데", W_)], [("왜 탄산만 ", W_), ("꽃 모양", Y_), ("일까요?", W_)]),
-    ([("진짜 이유는 ", W_), ("병 속 압력", Y_)], [("무려 ", W_), ("5~7기압", Y_)]),
-    ([("바닥이 평평하면", W_)], [("불룩", Y_), (" 튀어나와 못 서요", W_)]),
+    ([("생수병 바닥은 ", W_), ("평평", Y_), ("한데", W_)], [("탄산음료 병만 ", W_), ("꽃 모양", Y_)]),
+    ([("만약 바닥이 ", W_), ("평평", Y_), ("하면?", W_)], [("불룩", Y_), (" 튀어나와 넘어져요", W_)]),
+    ([("범인은 바로 ", W_), ("병 속 압력", Y_)], [("무려 ", W_), ("5~7기압", Y_)]),
     ([("다리 ", W_), ("5개", Y_), ("가 힘을 나눠", W_)], [("병을 ", W_), ("똑바로", Y_), (" 세워요", W_)]),
     ([("그래서 옛날 콜라병은", W_)], [("받침", Y_), ("을 따로 붙였어요", W_)]),
     ([("지금 냉장고 속 콜라병", W_)], [("바닥", Y_), (" 한번 보세요!", W_)]),
@@ -53,14 +53,14 @@ def overlay(t):
     s = NB
     # 0: 첫 문장 + 큰 5
     if t < s[1]:
-        kinetic(im, t, 0.0, s[1], [[[("콜라병", WHITE)], [("바닥", WHITE)]], [[("꽃잎이", WHITE)], [("5개", YEL)]]], (1388, 1500), 92, stagger=0.14, slam=0.6)
+        kinetic(im, t, 0.0, s[1], [[[("콜라병", WHITE)], [("바닥은", WHITE)]], [[("왜", WHITE)], [("꽃 모양?", YEL)]]], (1388, 1500), 92, stagger=0.14, slam=0.6)
         k = ease(t / 0.18); a_out = 1 - ease((t - (s[1] - 0.2)) / 0.2)
-        put(im, line_img((("5", YEL),), 260), 840, 1130, k * a_out, (1 + 0.15 * (1 - ease(t / 0.25))) * (1 + 0.03 * math.sin(t * 9)))
+        put(im, line_img((("?", YEL),), 260), 860, 1110, k * a_out, (1 + 0.15 * (1 - ease(t / 0.25))) * (1 + 0.03 * math.sin(t * 9)))
     if s[1] <= t < s[2]:
         pop(im, t, s[1] + 0.2, box_img("생수병 = 평평", 52, WHITE, INK, pad=34), 300, 520)
         pop(im, t, s[1] + 1.1, box_img("탄산 = 꽃 모양", 52, YEL, INK, pad=34), 780, 620)
-    if s[3] <= t < s[4]:
-        pop(im, t, s[3] + 0.9, box_img("불룩!", 70, RED, WHITE, pad=40), 800, 260)
+    if s[2] <= t < s[3]:
+        pop(im, t, s[2] + 0.9, box_img("불룩!", 70, RED, WHITE, pad=40), 800, 260)
     if s[4] <= t < s[5]:
         pop(im, t, s[4] + 0.3, box_img("다리 5개 = 힘 분산", 60, YEL, INK, pad=38), 540, 280)
     if t >= s[7]:
@@ -99,8 +99,10 @@ def audio(path):
     thud(0.05, .45); popf(0.9, 900, .22)
     for i in range(1, len(s) - 1):
         whoosh(s[i]); popf(s[i] + 0.05, 820, .16)
-    popf(s[1] + 0.2); popf(s[1] + 1.1, 950); thud(s[2] + 1.0, .4); ding(s[2] + 1.05, 990)
-    popf(s[3] + 0.9, 600, .24); popf(s[4] + 0.3, 900); popf(s[5] + 0.3); ding(s[5] + 2.0, 1175); ding(s[7], 1319); ding(s[7] + 0.14, 1760)
+    popf(s[1] + 0.2); popf(s[1] + 1.1, 950); popf(s[2] + 0.9, 600, .24)
+    thud(s[3] + 2.36, .4); ding(s[3] + 2.4, 990)                     # 압력계 5~7기압
+    popf(s[4] + 0.3, 900); thud(s[5] + 2.85, .45); ding(s[5] + 2.9, 1175)  # 받침 '딱!'
+    ding(s[7], 1319); ding(s[7] + 0.14, 1760)
     x *= 0.55
     for i in range(len(VOD)):
         v, vsr = sf.read(f"{VO}/l{i:02d}.wav")
