@@ -8,6 +8,12 @@ import sangsik26 as s
 from sangsik26 import *
 
 RED = (235, 70, 50)
+# 실사판: "이 묶는 법 이름은, 힐락." 뒤 1.4초 공백 제거 → 이 줄만 목소리 길이 + 0.45초로 줄임
+_n = [0.0]
+for _i in range(len(s.OB) - 1):
+    _d = s.VOD[_i] + 0.45 if _i == 8 else max(s.OB[_i + 1] - s.OB[_i], s.VOD[_i] + 0.38)
+    _n.append(_n[-1] + _d)
+s.NB[:] = _n; s.DUR2 = _n[-1]; DUR2 = s.DUR2
 
 
 def grad_layer():
