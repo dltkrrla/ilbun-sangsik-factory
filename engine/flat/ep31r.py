@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw
 import sangsik2 as b
 from sangsik2 import *
 
-VO = "/home/claude/work/vo31"
+VO = "/home/claude/work/vo31e"
 VOD = json.load(open(f"{VO}/meta.json"))
 NB = [0.0]
 for d in VOD:
@@ -19,7 +19,37 @@ DUR = NB[-1]
 b.DUR = DUR
 b.EP_TITLE = ((" ", WHITE),)
 RED = (235, 70, 50)
-Q_END = 1.45                       # 여는 질문이 떠 있는 시간
+Q_HOLD = 1.45                      # 여는 질문이 가운데 크게 머무는 시간 → 이후 아래로 내려가 자막 자리로
+Q_ROWS = [[[("콜라병", WHITE)], [("바닥", WHITE)]], [[("왜", WHITE)], [("꽃 모양", YEL)], [("일까요?", WHITE)]]]
+Q_HIT = [0.08, 0.40, 0.72, 0.92, 1.22]   # 말하는 박자에 맞춘 단어별 '쾅'
+
+
+def hook_question(im, t, t_end):
+    """여는 질문: 화면 가운데 한 단어씩 쾅 → '꽃 모양' 밑줄 → 아래 자막 자리로 미끄러져 내려가며 작아짐."""
+    if t >= t_end:
+        return
+    size = 104; f = F(size); tmp = ImageDraw.Draw(Image.new("RGBA", (4, 4)))
+    mv = ease((t - Q_HOLD) / 0.35)
+    ys = [820 + (1388 - 820) * mv, 962 + (1500 - 962) * mv]
+    scl = 1 - 0.16 * mv
+    a_out = 1 - ease((t - (t_end - 0.12)) / 0.12)
+    idx = 0
+    for words, cy in zip(Q_ROWS, ys):
+        ws = [sum(tmp.textlength(sg, font=f) for sg, _ in w) * scl for w in words]
+        sp = size * 0.26 * scl; x = 540 - (sum(ws) + sp * (len(ws) - 1)) / 2
+        for w, ww in zip(words, ws):
+            lt = t - Q_HIT[idx]; idx += 1
+            if lt >= 0:
+                sc = scl * (1 + 0.9 * (1 - ease(lt / 0.17)))
+                yel = any(c == YEL for _, c in w)
+                if yel:
+                    sc *= 1 + 0.05 * math.sin(t * 15)
+                    k = ease((t - 1.12) / 0.2)                     # '꽃 모양' 밑줄 쓱
+                    if k > 0:
+                        d = ImageDraw.Draw(im)
+                        d.rounded_rectangle((x + 6, cy + 66 * scl, x + 6 + (ww - 12) * k, cy + 80 * scl), 7, fill=YEL + (int(255 * a_out),))
+                put(im, line_img(tuple(w), size), x + ww / 2, cy, ease(lt / 0.07) * a_out, sc)
+            x += ww + sp
 Y_, W_ = YEL, WHITE
 CAPS = [
     None,
@@ -50,21 +80,14 @@ def pop(im, t, t0, img, x, y):
 
 def overlay(t):
     im = GRAD.copy()
-    if t < Q_END:                      # 여는 질문 동안 화면을 살짝 어둡게 (로고는 그대로 밝게)
-        a = min(1, t / 0.08) * (1 - ease((t - (Q_END - 0.16)) / 0.16))
-        im.alpha_composite(Image.new("RGBA", (W, H), (8, 12, 28, int(130 * a))))
+    if t < Q_HOLD + 0.4:               # 여는 질문 동안 화면을 어둡게 깔아 글자에 집중 (로고는 밝게)
+        a = min(1, t / 0.06) * (1 - ease((t - Q_HOLD) / 0.35))
+        im.alpha_composite(Image.new("RGBA", (W, H), (6, 10, 24, int(165 * a))))
     signature2(im, t)
     s = NB
     # 0: 첫 문장 + 큰 5
     if t < s[1]:
-        # 여는 질문: 화면을 살짝 어둡게 깔고 한 단어씩 '쾅' (채널 시그니처 오프닝)
-        kinetic(im, t, 0.0, Q_END, [[[("콜라병", WHITE)], [("바닥은", WHITE)]], [[("왜", WHITE)], [("꽃 모양", YEL)], [("일까요?", WHITE)]]],
-                (800, 940), 100, stagger=0.15, slam=0.9, out=0.16)
-        kinetic(im, t, Q_END - 0.05, s[1], [[[("콜라병", WHITE)], [("바닥", WHITE)]], [[("꽃잎이", WHITE)], [("5개", YEL)]]], (1388, 1500), 92, stagger=0.1, slam=0.6)
-        t5 = t - (Q_END + 0.1)
-        if t5 >= 0:
-            k = ease(t5 / 0.18); a_out = 1 - ease((t - (s[1] - 0.2)) / 0.2)
-            put(im, line_img((("5", YEL),), 260), 840, 1130, k * a_out, (1 + 0.15 * (1 - ease(t5 / 0.25))) * (1 + 0.03 * math.sin(t * 9)))
+        hook_question(im, t, s[1])
     if s[1] <= t < s[2]:
         pop(im, t, s[1] + 0.2, box_img("생수병 = 평평", 52, WHITE, INK, pad=34), 300, 520)
         pop(im, t, s[1] + 1.1, box_img("탄산 = 꽃 모양", 52, YEL, INK, pad=34), 780, 620)
@@ -105,7 +128,9 @@ def audio(path):
     def ding(at, f=1320, vol=.16):
         m = int(.7 * sr); tt = np.arange(m) / sr; add(at, vol * (np.sin(2 * np.pi * f * tt) + .4 * np.sin(2 * np.pi * f * 2.01 * tt)) * env(m, .22))
     s = NB
-    thud(0.05, .45); popf(0.2, 760, .14); popf(0.65, 1000, .2); popf(Q_END + 0.1, 900, .22)
+    for k_, th in enumerate(Q_HIT):
+        thud(th, .32) if k_ in (0, 3) else popf(th, 760 + 60 * k_, .15)
+    whoosh(Q_HOLD + 0.2, .3, .12)
     for i in range(1, len(s) - 1):
         whoosh(s[i]); popf(s[i] + 0.05, 820, .16)
     popf(s[1] + 0.2); popf(s[1] + 1.1, 950); thud(s[2] + 2.55, .4); ding(s[2] + 2.6, 990)   # 압력계
