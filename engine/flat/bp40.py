@@ -229,6 +229,111 @@ def roll(t):
         c.circle(790, 640, 100 * k, outline=GREEN, w=20, a=1)
     return intro_fade(c.compose(base, glow=0.85), t).convert("RGB")
 
+
+# ---------------------------------------------------------------- A v2. 전문 인포그래픽형 순위 막대
+TOTAL = 8544
+ROWS = [("전기장판", 2443, 28.6, HOT), ("전기히터", 2186, 25.6, CYAN), ("나무난로", 1444, 16.9, (120, 200, 190))]
+BG_N = (12, 34, 70)
+def eexpo(x): x = max(0.0, min(1.0, x)); return 1 - 2 ** (-10 * x) if x < 1 else 1.0
+
+def icon(c, kind, x, y, a, hot=False):
+    s = 34
+    c.rrect((x - s - 8, y - s - 8, x + s + 8, y + s + 8), 18, fill=(16, 44, 86), outline=mix(LINE, BG_N, 0.4), w=2, a=a)
+    if kind == 0:                                            # 전기장판: 패드 + 지그재그 열선
+        c.rrect((x - s + 2, y - s + 10, x + s - 2, y + s - 10), 8, fill=BEIGE, a=a)
+        pts = []
+        for i in range(5):
+            yy = y - s + 18 + i * 9
+            pts += [(x - s + 10, yy), (x + s - 10, yy)] if i % 2 == 0 else [(x + s - 10, yy), (x - s + 10, yy)]
+        c.line(pts, WIRE if not hot else (255, 90, 40), 3, a)
+    elif kind == 1:                                          # 전기히터: 몸체 + 빛나는 봉 3개
+        c.rrect((x - s + 6, y - s + 4, x + s - 6, y + s - 12), 8, fill=(200, 210, 225), a=a)
+        for i in range(3):
+            xx = x - 16 + i * 16
+            c.rrect((xx - 4, y - s + 12, xx + 4, y + s - 20), 4, fill=ORANGE, a=a)
+        c.rrect((x - 22, y + s - 12, x + 22, y + s - 4), 4, fill=(150, 160, 180), a=a)
+    else:                                                    # 나무난로: 몸체 + 연통 + 불꽃
+        c.rrect((x - s + 8, y - 10, x + s - 8, y + s - 6), 6, fill=(90, 100, 118), a=a)
+        c.rrect((x + 6, y - s + 2, x + 16, y - 10), 2, fill=(90, 100, 118), a=a)
+        c.poly([(x - 10, y + 18), (x - 2, y - 2), (x + 6, y + 18)], ORANGE, a)
+        c.poly([(x - 6, y + 18), (x - 2, y + 8), (x + 2, y + 18)], YEL, a)
+
+def bars(t):
+    base = BG.copy(); c = Canvas(); title(c, t, "DWG. 40-A  |  난방기기 화재 · 최근 10년 (소방청)")
+    BX0, BXMAX = 300, 900; BH_ = 76; YS = [650, 830, 1010]
+    # 헤더: 총 건수 카운터
+    ha = ease((t - 0.05) / 0.3)
+    c.text(540, 360, "난방기기 화재 10년 합계", 36, mix(LINE, BG_N, 0.25), ha)
+    n = int(TOTAL * eexpo((t - 0.15) / 1.0))
+    c.text(540, 445, f"{n:,}건", 92, LINE, ha, stroke=4)
+    c.line([(380, 506), (700, 506)], CYAN, 3, ha * 0.6)
+    # 눈금선
+    for v in (0, 1000, 2000):
+        x = BX0 + (BXMAX - BX0) * v / 2443
+        c.line([(x, 560), (x, 1075)], mix(DIM, BG_N, 0.35), 2, ha * 0.7)
+        c.text(x, 1100, f"{v:,}", 26, DIM, ha * 0.9)
+    focus = ease((t - 1.45) / 0.3)                            # 1위 강조 단계
+    for i, ((name, v, pct, col), y) in enumerate(zip(ROWS, YS)):
+        lead = i == 0
+        ra = ease((t - 0.25 - 0.08 * i) / 0.25)
+        dx = (1 - eout((t - 0.25 - 0.08 * i) / 0.35)) * -60
+        dim = 0 if lead else 0.55 * focus
+        colr = mix(col, BG_N, dim)
+        # 순위 배지 + 아이콘 + 이름
+        bk = max(0.05, back((t - 0.3 - 0.08 * i) / 0.3))
+        c.circle(70 + dx, y, 30 * bk, fill=mix(HOT if lead else (60, 90, 140), BG_N, dim), a=ra)
+        c.text(70 + dx, y - 1, str(i + 1), 36 * bk, (255, 255, 255), ra)
+        icon(c, i, 168 + dx, y, ra * (1 - dim * 0.6), hot=lead and focus > 0)
+        c.text(BX0 + dx, y - BH_ / 2 - 30, name, 46, mix(YEL if lead else LINE, BG_N, dim), ra, anchor="lm", stroke=3)
+        # 막대 (부드럽게 감속하며 자람)
+        k = eexpo((t - 0.45 - 0.12 * i) / 0.9)
+        L = (BXMAX - BX0) * v / 2443 * k
+        if L > BH_ / 2:
+            x1 = BX0 + dx + L
+            c.rrect((BX0 + dx, y - BH_ / 2, x1, y + BH_ / 2), BH_ / 2, fill=mix(colr, BG_N, 0.25), a=ra)
+            c.rrect((BX0 + dx + 4, y - BH_ / 2 + 4, x1 - 4, y + 2), BH_ / 2 - 6, fill=mix(colr, (255, 255, 255), 0.18), a=ra)
+            c.rrect((x1 - BH_ + 6, y - BH_ / 2 + 6, x1 - 6, y + BH_ / 2 - 6), BH_ / 2 - 6, fill=mix(colr, (255, 255, 255), 0.45), a=ra)
+            if lead and focus > 0:                           # 빛이 쓱 지나감 (가늘고 은은하게)
+                ph = ((t - 1.5) * 0.9) % 1.2
+                sx = BX0 + dx + (L + 160) * ph - 80
+                for w_, mk in ((26, 0.12), (12, 0.22), (4, 0.34)):
+                    xa, xb = sx - w_, sx + w_
+                    if xa > BX0 + dx + 30 and xb < x1 - 40:
+                        c.rrect((xa, y - BH_ / 2 + 10, xb, y + BH_ / 2 - 10), 6, fill=mix(colr, (255, 255, 255), mk), a=ra)
+            # 값 (막대와 함께 올라가는 숫자)
+            nv = int(v * k)
+            tx = min(x1 + 18, 1000)
+            if lead:
+                c.text(x1 - 26, y, f"{pct * k:.1f}%", 38, (255, 255, 255), ra * ease((t - 1.0) / 0.2), anchor="rm")
+            c.text(x1 + 16, y - 1, f"{nv:,}", 46 if lead else 38, mix(YEL if lead else LINE, BG_N, dim), ra, anchor="lm", stroke=3)
+    # 1위 강조: 둘레 빛 + 왕관 배지
+    if focus > 0:
+        y = YS[0]; L = (BXMAX - BX0)
+        pul = 0.5 + 0.5 * math.sin(t * 8)
+        c.rrect((BX0 - 14, y - BH_ / 2 - 14, BX0 + L + 14, y + BH_ / 2 + 14), BH_ / 2 + 14, outline=HOT, w=3, a=focus * (0.5 + 0.4 * pul))
+        bk = max(0.05, back((t - 1.5) / 0.35))
+        bx, by = BX0 + L - 60, y - BH_ / 2 - 46
+        c.rrect((bx - 60 * bk, by - 26 * bk, bx + 60 * bk, by + 26 * bk), 26 * bk, fill=HOT, a=focus)
+        c.text(bx, by - 2, "1위", 36 * bk, (255, 255, 255), focus)
+    # 전체 중 비율 띠
+    sa = ease((t - 1.8) / 0.25); SY = 1190; SX0, SX1 = 70, 1010
+    if sa > 0:
+        c.text(SX0, SY - 44, "전체 화재 중", 30, mix(LINE, BG_N, 0.2), sa, anchor="lm")
+        c.rrect((SX0, SY - 22, SX1, SY + 22), 22, fill=(20, 46, 88), a=sa)
+        segs = [(28.6, HOT), (25.6, mix(CYAN, BG_N, 0.45)), (16.9, mix((120, 200, 190), BG_N, 0.45))]
+        x = SX0
+        for j, (p_, col) in enumerate(segs):
+            k = eexpo((t - 1.9 - 0.12 * j) / 0.5); w_ = (SX1 - SX0) * p_ / 100 * k
+            if w_ > 6:
+                c.rrect((x + 2, SY - 18, x + w_ - 2, SY + 18), 18, fill=col, a=sa)
+            x += (SX1 - SX0) * p_ / 100
+        if t > 2.35:                                         # 대괄호 + '4건 중 1건 넘게'
+            ba = ease((t - 2.35) / 0.2); xe = SX0 + (SX1 - SX0) * 0.286
+            c.line([(SX0 + 4, SY + 30), (SX0 + 4, SY + 40), (xe - 4, SY + 40), (xe - 4, SY + 30)], YEL, 4, ba)
+            c.text((SX0 + xe) / 2 + 170, SY + 4, "← 4건 중 1건 넘게!", 0, YEL, 0) if False else None
+            c.text(SX0 + 6, SY + 74, "4건 중 1건 넘게!", 40, YEL, ba, anchor="lm", stroke=3)
+    return intro_fade(c.compose(base, glow=0.8), t).convert("RGB")
+
 SCENES = {"bars": bars, "xray": xray, "fold": fold, "layers": layers, "roll": roll}
 if __name__ == "__main__":
     fn = SCENES[sys.argv[1]]; out = sys.argv[2]
