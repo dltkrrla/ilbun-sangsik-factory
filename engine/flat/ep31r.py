@@ -55,7 +55,7 @@ def overlay(t):
     if t < s[1]:
         kinetic(im, t, 0.0, s[1], [[[("콜라병", WHITE)], [("바닥", WHITE)]], [[("꽃잎이", WHITE)], [("5개", YEL)]]], (1388, 1500), 92, stagger=0.14, slam=0.6)
         k = ease(t / 0.18); a_out = 1 - ease((t - (s[1] - 0.2)) / 0.2)
-        put(im, line_img((("5", YEL),), 300), 540, 420, k * a_out, (1 + 0.15 * (1 - ease(t / 0.25))) * (1 + 0.03 * math.sin(t * 9)))
+        put(im, line_img((("5", YEL),), 260), 840, 1130, k * a_out, (1 + 0.15 * (1 - ease(t / 0.25))) * (1 + 0.03 * math.sin(t * 9)))
     if s[1] <= t < s[2]:
         pop(im, t, s[1] + 0.2, box_img("생수병 = 평평", 52, WHITE, INK, pad=34), 300, 520)
         pop(im, t, s[1] + 1.1, box_img("탄산 = 꽃 모양", 52, YEL, INK, pad=34), 780, 620)
