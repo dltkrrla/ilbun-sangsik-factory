@@ -65,9 +65,6 @@ def overlay(t):
         pop(im, t, s[3] + 0.9, box_img("불룩!", 70, RED, WHITE, pad=40), 800, 260)
     if s[4] <= t < s[5]:
         pop(im, t, s[4] + 0.3, box_img("다리 5개 = 힘 분산", 60, YEL, INK, pad=38), 540, 280)
-    if s[5] <= t < s[6]:
-        pop(im, t, s[5] + 0.3, box_img("옛날 콜라병", 56, WHITE, INK, pad=34), 540, 250)
-        pop(im, t, s[5] + 2.0, box_img("받침을 따로!", 64, YEL, INK, pad=38), 860, 1130)
     if t >= s[7]:
         put(im, box_img("구독하면 매일 1분 상식", 50, YEL, INK, pad=38), 540, 1252, 1.0, 0.6 + 0.4 * back((t - s[7]) / 0.28))
     for i in range(1, len(CAPS)):
