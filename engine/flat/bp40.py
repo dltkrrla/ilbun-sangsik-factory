@@ -334,6 +334,230 @@ def bars(t):
             c.text(SX0 + 6, SY + 74, "4건 중 1건 넘게!", 40, YEL, ba, anchor="lm", stroke=3)
     return intro_fade(c.compose(base, glow=0.8), t).convert("RGB")
 
+
+# ================================================================ v3: 열선 엑스레이 + 접힘 단면 (고급판)
+from PIL import ImageDraw as _ID, ImageFilter as _IF
+XB = (150, 400, 930, 1110)                                  # 장판 위치 (x0, y0, x1, y1)
+_ROWS = 10
+def _wire_pts():
+    x0, y0, x1, y1 = XB; m = 78; top = y0 + 64; bot = y1 - 64
+    gap = (bot - top) / (_ROWS - 1); r = gap / 2; pts = []
+    for i in range(_ROWS):
+        y = top + i * gap; xa, xb = (x0 + m, x1 - m) if i % 2 == 0 else (x1 - m, x0 + m)
+        pts += [(xa, y), (xb, y)]
+        if i < _ROWS - 1:
+            side = 1 if xb > 540 else -1
+            pts += [(xb + side * r * math.cos(a), y + r + r * math.sin(a)) for a in np.linspace(-math.pi / 2, math.pi / 2, 24)[1:-1]]
+    return pts, [top + i * gap for i in range(_ROWS)]
+WPTS, WROWS = _wire_pts()
+_XL = {}
+def _xray_layers():
+    if _XL: return _XL
+    S2 = 2; x0, y0, x1, y1 = XB
+    def mask_img():
+        m = Image.new("L", (W * S2, H * S2), 0); _ID.Draw(m).rounded_rectangle([x0 * S2, y0 * S2, x1 * S2, y1 * S2], 36 * S2, fill=255)
+        return m.resize((W, H), Image.LANCZOS)
+    M = np.array(mask_img(), np.float32) / 255
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    # 원단: 베이지 그러데이션 + 마름모 퀼팅 볼록함 + 직물 결
+    u = (xx + yy) / 64 * math.pi; v = (xx - yy) / 64 * math.pi
+    puff = np.sqrt(np.abs(np.sin(u)) * np.abs(np.sin(v)))
+    rng = np.random.default_rng(4); grain = rng.normal(0, 1, (H, W)).astype(np.float32)
+    grain = np.array(Image.fromarray(((grain * 18) + 128).clip(0, 255).astype(np.uint8)).filter(_IF.GaussianBlur(0.8)), np.float32) - 128
+    g = ((xx - x0) / (x1 - x0) * 0.5 + (yy - y0) / (y1 - y0) * 0.5)
+    fab = np.zeros((H, W, 4), np.float32)
+    for k, (a_, b_) in enumerate(((236, 204), (218, 184), (184, 150))):
+        fab[..., k] = (a_ + (b_ - a_) * g) * (0.86 + 0.16 * puff) + grain * 0.6
+    stitch = ((np.abs(np.sin(u)) < 0.06) | (np.abs(np.sin(v)) < 0.06)) & (((xx + yy) // 6) % 2 == 0)
+    fab[..., :3][stitch] *= 0.82
+    edge = np.array(Image.fromarray((M * 255).astype(np.uint8)).filter(_IF.MinFilter(15)), np.float32) / 255
+    fab[..., :3] *= (0.78 + 0.22 * edge[..., None])          # 테두리 파이핑
+    fab[..., 3] = M * 255
+    # 엑스레이: 어두운 청록 + 퀼팅 유령선 + 빛나는 열선
+    xr = np.zeros((H, W, 4), np.float32)
+    xr[..., 0] = 14 + 10 * puff; xr[..., 1] = 46 + 22 * puff; xr[..., 2] = 74 + 30 * puff
+    ghost = (np.abs(np.sin(u)) < 0.05) | (np.abs(np.sin(v)) < 0.05)
+    xr[..., 1][ghost] += 40; xr[..., 2][ghost] += 60
+    xr[..., 3] = M * 245
+    wl = Image.new("RGBA", (W * S2, H * S2), (0, 0, 0, 0)); d = _ID.Draw(wl)
+    P2 = [(x * S2, y * S2) for x, y in WPTS]
+    d.line(P2, fill=(255, 120, 40, 140), width=34 * S2, joint="curve")
+    glow = wl.resize((W, H), Image.LANCZOS).filter(_IF.GaussianBlur(14))
+    wl = Image.new("RGBA", (W * S2, H * S2), (0, 0, 0, 0)); d = _ID.Draw(wl)
+    d.line(P2, fill=(70, 30, 14, 255), width=17 * S2, joint="curve")
+    d.line(P2, fill=(255, 146, 54, 255), width=8 * S2, joint="curve")
+    d.line(P2, fill=(255, 228, 170, 255), width=3 * S2, joint="curve")
+    wire = wl.resize((W, H), Image.LANCZOS)
+    xr_img = Image.fromarray(xr.clip(0, 255).astype(np.uint8), "RGBA")
+    xr_img.alpha_composite(glow); xr_img.alpha_composite(wire)
+    # 그림자
+    sh = Image.fromarray((M * 150).astype(np.uint8)).filter(_IF.GaussianBlur(24))
+    shadow = Image.new("RGBA", (W, H), (0, 0, 0, 0)); shadow.putalpha(sh)
+    shadow = shadow.transform((W, H), Image.AFFINE, (1, 0, -14, 0, 1, -26))
+    cx0, cy0, cx1, cy1 = x0 - 30, y0 - 30, x1 + 30, y1 + 30
+    _XL.update(fab=np.array(Image.fromarray(fab.clip(0, 255).astype(np.uint8), "RGBA"))[cy0:cy1, cx0:cx1].astype(np.float32),
+               xr=np.array(xr_img)[cy0:cy1, cx0:cx1].astype(np.float32), shadow=shadow, box=(cx0, cy0, cx1, cy1))
+    return _XL
+
+def xray(t):
+    L = _xray_layers(); base = BG.copy(); c = Canvas(); title(c, t, "DWG. 40-B  |  전기장판 속 열선 (X-RAY)")
+    cx0, cy0, cx1, cy1 = L["box"]; x0, y0, x1, y1 = XB
+    a_in = ease(t / 0.25)
+    sy = lerp(y0 - 30, y1 + 30, ease((t - 0.15) / 0.7))      # 스캔선
+    ys = np.arange(cy0, cy1, dtype=np.float32)[:, None, None]
+    m = np.clip((sy - ys) / 26 + 0.5, 0, 1)
+    comp = L["fab"] * (1 - m) + L["xr"] * m
+    comp[..., 3] *= a_in
+    base.alpha_composite(L["shadow"].point(lambda v: int(v * a_in)) if a_in < 1 else L["shadow"])
+    base.alpha_composite(Image.fromarray(comp.clip(0, 255).astype(np.uint8), "RGBA"), (cx0, cy0))
+    # 전선 + 조절기
+    c.line([(x1 - 40, y1 - 20), (x1 + 30, y1 + 40), (x1 + 30, y1 + 96)], (210, 216, 228), 7, a_in)
+    c.rrect((x1 - 16, y1 + 96, x1 + 76, y1 + 160), 14, fill=(226, 232, 242), outline=(150, 160, 180), w=2, a=a_in)
+    c.circle(x1 + 30, y1 + 128, 9, fill=HOT if t > 0.3 else (120, 130, 150), a=a_in)
+    # 스캔 HUD
+    if 0.12 < t < 0.95:
+        ha = ease((t - 0.12) / 0.1) * (1 - ease((t - 0.85) / 0.1))
+        c.line([(x0 - 40, sy), (x1 + 40, sy)], CYAN, 6, ha)
+        for k_, al in ((10, 0.25), (24, 0.12), (44, 0.06)):
+            c.rrect((x0 - 40, sy - k_, x1 + 40, sy), 0, fill=CYAN, a=ha * al)
+    ha = ease((t - 0.1) / 0.2)
+    for sx_, sy_ in ((x0 - 22, y0 - 22), (x1 + 22, y0 - 22), (x1 + 22, y1 + 22), (x0 - 22, y1 + 22)):
+        dx = 46 if sx_ < 540 else -46; dy = 46 if sy_ < 760 else -46
+        c.line([(sx_, sy_ + dy), (sx_, sy_), (sx_ + dx, sy_)], CYAN, 5, ha)
+    pct = int(100 * ease((t - 0.15) / 0.7))
+    c.text(x0 - 10, y0 - 52, "X-RAY", 32, CYAN, ha, anchor="lm")
+    c.text(x1 + 10, y0 - 52, f"SCAN {pct}%", 32, CYAN if pct < 100 else YEL, ha, anchor="rm")
+    if t > 0.75:
+        c.text(x0 + 70, WROWS[0] - 42, "열선", 38, WIRE, ease((t - 0.75) / 0.15), anchor="lm", stroke=3)
+    # 접힌 자국: 세로로 그어지는 주름 + 열선이 지나는 자리마다 빨간 점
+    if t > 0.95:
+        k = eout((t - 0.95) / 0.3); yb = lerp(y0 + 6, y1 - 6, k)
+        c.line([(540, y0 + 6), (540, yb)], (4, 14, 30), 16, 0.7)
+        c.line([(540, y0 + 6), (540, yb)], YEL, 4, 0.95)
+        for i, wy in enumerate(WROWS):
+            tt = t - 1.1 - 0.035 * i
+            if tt < 0 or wy > yb: continue
+            pk = back(tt / 0.25); pul = 0.75 + 0.25 * math.sin(t * 14 + i)
+            c.circle(540, wy, 15 * pk, fill=HOT, a=1)
+            c.circle(540, wy, 6 * pk, fill=(255, 235, 200), a=1)
+            ph = (tt * 1.6) % 1
+            c.circle(540, wy, 18 + 34 * ph, outline=HOT, w=3, a=(1 - ph) * pul)
+        if t > 1.3:
+            callout(c, W / 2, 1215, "접힌 자국", 64, YEL, ease((t - 1.3) / 0.12), 0.7 + 0.3 * back((t - 1.3) / 0.3))
+    return intro_fade(c.compose(base, glow=0.8), t).convert("RGB")
+
+# ---------- 접힘 단면: 부드럽게 휘며 접히고, 꺾인 곳으로 열이 몰림 ----------
+FX0, FY0 = 150, 930; FL1 = 470; FLT = 900; FR = 40; FT = 46
+def _center(theta, s):
+    if s <= FL1: return FX0 + s, FY0, 0.0
+    s2 = s - FL1; arc = FR * theta
+    if s2 <= arc:
+        a = s2 / FR; return FX0 + FL1 + FR * math.sin(a), FY0 - FR + FR * math.cos(a), a
+    s3 = s2 - arc; ex, ey = FX0 + FL1 + FR * math.sin(theta), FY0 - FR + FR * math.cos(theta)
+    return ex + s3 * math.cos(theta), ey - s3 * math.sin(theta), theta
+def _strip(theta, off, n=180):
+    out = []
+    for s in np.linspace(0, FLT, n):
+        x, y, a = _center(theta, s); out.append((x + off * math.sin(a), y + off * math.cos(a)))
+    return out
+_RAD = None
+def _bloom(cx, cy, r, inten):
+    global _RAD
+    if _RAD is None:
+        g = np.linspace(-1, 1, 400); X, Y = np.meshgrid(g, g); D = np.sqrt(X ** 2 + Y ** 2)
+        _RAD = np.clip(1 - D, 0, 1) ** 2.2
+    if inten <= 0 or r < 4: return None
+    sz = int(2 * r); A = np.array(Image.fromarray((_RAD * 255).astype(np.uint8)).resize((sz, sz), Image.BILINEAR), np.float32) / 255
+    img = np.zeros((sz, sz, 4), np.float32)
+    img[..., 0] = 255; img[..., 1] = 90 + 150 * A ** 3; img[..., 2] = 40 + 180 * A ** 6
+    img[..., 3] = np.clip(A * 1.25, 0, 1) * 255 * inten
+    return Image.fromarray(img.clip(0, 255).astype(np.uint8), "RGBA"), (int(cx - r), int(cy - r))
+
+def fold(t):
+    base = BG.copy(); c = Canvas(); title(c, t, "DWG. 40-C  |  접힌 곳 단면")
+    a0 = ease(t / 0.25)
+    theta = math.pi * ease((t - 0.2) / 0.95)
+    smid = FL1 + FR * theta / 2
+    bx, by, _ = _center(theta, smid)
+    z = 1.3 + 0.3 * ease((t - 1.3) / 1.3)                     # 꺾인 곳으로 살짝 다가감
+    fx, fy = lerp(540, bx, ease((t - 1.3) / 1.3)), lerp(820, by, ease((t - 1.3) / 1.3))
+    def P(p): return (540 + (p[0] - fx) * z, 820 + (p[1] - fy) * z)
+    # 바닥
+    c.line([P((40, FY0 + FT / 2 + 4)), P((1040, FY0 + FT / 2 + 4))], DIM, 3, a0 * 0.7)
+    heat = ease((t - 1.45) / 1.3)
+    # 열 번짐(꺾인 곳)
+    bpx, bpy = P((bx, by))
+    fl_ = 0.85 + 0.15 * math.sin(t * 17) + 0.06 * math.sin(t * 31)
+    bl = _bloom(bpx, bpy, 300 * (0.6 + 0.4 * heat), heat * fl_)
+    core = _bloom(bpx, bpy, 150 * (0.5 + 0.5 * heat), min(1, heat * 0.95 * fl_))
+    # 장판 몸통: 원단 → 솜 → 열선
+    outer = [P(q) for q in _strip(theta, FT / 2)]; inner = [P(q) for q in _strip(theta, -FT / 2)]
+    c.poly(outer + inner[::-1], (196, 176, 140), a0)
+    po = [P(q) for q in _strip(theta, FT / 2 - 6)]; pi_ = [P(q) for q in _strip(theta, -FT / 2 + 6)]
+    c.poly(po + pi_[::-1], (236, 222, 192), a0)
+    if heat > 0:                                              # 열화상처럼 원단까지 달아오름
+        for q in range(len(po) - 1):
+            s_ = FLT * q / (len(po) - 1); h = heat * math.exp(-(abs(s_ - smid) / 95) ** 2)
+            if h < 0.04: continue
+            col = mix(mix((236, 222, 192), ORANGE, min(1, h * 1.5)), HOT, max(0, h - 0.45) * 1.8)
+            c.poly([po[q], po[q + 1], pi_[q + 1], pi_[q]], col, a0)
+    c.line(outer, (150, 130, 100), 3, a0); c.line(inner, (150, 130, 100), 3, a0)
+    for q in range(0, 180, 12):                               # 바느질 땀
+        c.line([po[q], po[min(q + 5, 179)]], (180, 160, 126), 2, a0 * 0.8)
+    wire = [P(q) for q in _strip(theta, 0, 240)]
+    for j in range(len(wire) - 1):                            # 열선: 꺾인 곳일수록 빨갛고 하얗게
+        s_ = FLT * j / 239; dist = abs(s_ - smid)
+        h = heat * math.exp(-(dist / 70) ** 2)
+        col = mix(mix(WIRE, HOT, min(1, h * 1.6)), (255, 240, 210), max(0, h - 0.55) * 2)
+        c.line([wire[j], wire[j + 1]], col, 7 + 3 * h, a0)
+    # 열이 꺾인 곳으로 모여드는 알갱이
+    if heat > 0:
+        for i in range(14):
+            side = 1 if i % 2 == 0 else -1; ph = (t * 0.55 + i * 0.13) % 1
+            s_ = smid + side * (360 * (1 - ph) + 30)
+            if 0 < s_ < FLT:
+                x, y, _ = _center(theta, s_); q = P((x, y))
+                c.circle(q[0], q[1], 6 + 4 * ph, fill=mix(ORANGE, HOT, ph), a=heat * (0.4 + 0.6 * ph))
+        for i in range(5):                                    # 올라가는 열기
+            ph = (t * 1.0 + i * 0.2) % 1; x0 = bpx - 70 + i * 35
+            pts = [(x0 + 12 * math.sin(s / 16 + t * 5 + i), bpy - 70 - s - ph * 140) for s in range(0, 130, 6)]
+            c.line(pts, (255, 170, 120), 4, heat * (1 - ph) * 0.7)
+    # 돋보기: 꺾인 열선 확대
+    if t > 1.0:
+        ia = ease((t - 1.0) / 0.25); mx, my, R = 300, 520, 160; sc = 0.6 + 0.4 * back((t - 1.0) / 0.35)
+        c.line([(bpx - 30, bpy - 40), (mx + R * 0.6, my + R * 0.75)], LINE, 3, ia * 0.7)
+        c.circle(mx, my, R * sc, fill=(8, 26, 56), outline=LINE, w=6, a=ia)
+        kk = ease((t - 1.15) / 0.35); dep = 60 * kk
+        pts = [(mx - 120 * sc, my - 40 * sc), (mx, my + (dep - 10) * sc), (mx + 120 * sc, my - 40 * sc)]
+        c.line(pts, (70, 30, 14), 22 * sc, ia)
+        c.line(pts, mix(WIRE, HOT, heat), 11 * sc, ia)
+        c.line(pts, (255, 230, 180), 3 * sc, ia)
+        if kk > 0.6:
+            ka = ease((t - 1.35) / 0.2)
+            for dx_, dy_ in ((-18, 22), (16, 26), (0, 38)):
+                c.line([(mx + dx_ * sc, my + (dep - 4) * sc), (mx + dx_ * 1.6 * sc, my + (dep + dy_) * sc)], (255, 240, 200), 3, ka * (0.6 + 0.4 * math.sin(t * 20)))
+            c.text(mx, my + 112 * sc, "꺾임!", 40, HOT, ka, stroke=3)
+    # 온도 막대
+    ta = ease((t - 1.4) / 0.25)
+    if ta > 0:
+        gx0, gx1, gy = 620, 1000, 470
+        for j in range(40):
+            k = j / 39; col = mix(mix(CYAN, ORANGE, min(1, k * 1.6)), HOT, max(0, k - 0.6) * 2.5)
+            c.rrect((lerp(gx0, gx1, k), gy - 12, lerp(gx0, gx1, k) + (gx1 - gx0) / 39 + 1, gy + 12), 0, fill=col, a=ta)
+        px = lerp(gx0, gx1, 0.25 + 0.72 * heat)
+        c.poly([(px, gy - 18), (px - 14, gy - 40), (px + 14, gy - 40)], (255, 255, 255), ta)
+        c.text(gx0, gy + 40, "보통", 28, LINE, ta, anchor="lm"); c.text(gx1, gy + 40, "과열", 28, HOT, ta, anchor="rm")
+    if t > 2.05:
+        callout(c, W / 2, 1200, "열이 한곳에!", 66, HOT, ease((t - 2.05) / 0.12), 0.7 + 0.3 * back((t - 2.05) / 0.3))
+    if bl: _paste(base, bl)
+    out = c.compose(base, glow=0.9)
+    if core: _paste(out, core)
+    return intro_fade(out, t).convert("RGB")
+
+def _paste(base, bl):
+    img, (x, y) = bl; cx0, cy0 = max(0, -x), max(0, -y)
+    img = img.crop((cx0, cy0, img.width, img.height)); base.alpha_composite(img, (max(0, x), max(0, y)))
+
 SCENES = {"bars": bars, "xray": xray, "fold": fold, "layers": layers, "roll": roll}
 if __name__ == "__main__":
     fn = SCENES[sys.argv[1]]; out = sys.argv[2]
