@@ -44,16 +44,11 @@ def ring(im, t, x, y, t0):
 
 def overlay(t):  # t = original animation time (OB)
     im = GRAD.copy()
-    if 10.0 <= t < 15.5:  # 묶는 법: 실사 손 영상 + 오른쪽 위 작은 그림으로 순서 확인
+    if 10.0 <= t < 15.5:  # 묶는 법: 직접 촬영한 손 영상 + 단계 문구
         k = ease((t - 10.0) / 0.25) * (1 - ease((t - 15.25) / 0.25))
-        ins = scene_tie(t).reduce(SC).crop((70, 200, 1010, 980)).resize((340, 282), Image.LANCZOS).convert("RGBA")
-        m = Image.new("L", ins.size, 0); ImageDraw.Draw(m).rounded_rectangle((0, 0, ins.width - 1, ins.height - 1), 28, fill=int(255 * k)); ins.putalpha(m)
-        sh = Image.new("RGBA", (ins.width + 40, ins.height + 40), (0, 0, 0, 0)); ImageDraw.Draw(sh).rounded_rectangle((20, 24, ins.width + 20, ins.height + 24), 28, fill=(0, 0, 0, int(120 * k)))
-        im.alpha_composite(sh.filter(ImageFilter.GaussianBlur(10)), (W - 40 - ins.width - 20, 250 - 20))
-        im.alpha_composite(ins, (W - 40 - ins.width, 250))
         lt = t - 10.0
-        msg = "① 같은 쪽 맨 위 구멍 → 작은 고리" if lt < 2.2 else ("② 반대쪽 고리에 통과" if lt < 3.7 else "③ 당기고 평소처럼 묶기")
-        t_in = 10.1 if lt < 2.2 else (12.2 if lt < 3.7 else 13.7)
+        msg = "① 같은 쪽 맨 위 구멍 → 작은 고리" if lt < 2.2 else ("② 반대쪽 고리에 통과" if lt < 3.85 else "③ 당기고 평소처럼 묶기")
+        t_in = 10.1 if lt < 2.2 else (12.2 if lt < 3.85 else 13.85)
         put(im, box_img(msg, 50, YEL, INK, pad=34), 540, 1262, k, 0.7 + 0.3 * back((t - t_in) / 0.25))
     signature2(im, t)
     kinetic(im, t, 0.0, 1.5, [[[("이거", WHITE)]], [[("알고", YEL)], [("있었나요?", YEL)]]], (690, 850), 128, stagger=0.17, slam=0.9)
