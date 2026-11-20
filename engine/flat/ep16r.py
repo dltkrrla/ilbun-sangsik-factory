@@ -99,7 +99,6 @@ def pop(im, t, t0, img, x, y):
 def overlay(t):
     im = GRAD.copy()
     signature2(im, t)
-    hook_title(im, t)
     s = NB
     # 0: 첫 문장 + 큰 5
     if t < s[1]:
@@ -137,7 +136,7 @@ def audio(path):
     def ding(at, f=1320, vol=.16):
         m = int(.7 * sr); tt = np.arange(m) / sr; add(at, vol * (np.sin(2 * np.pi * f * tt) + .4 * np.sin(2 * np.pi * f * 2.01 * tt)) * env(m, .22))
     s = NB
-    whoosh(0.16, .25, .16); popf(T_IN + 0.02, 980, .2); popf(0.92, 1200, .18)   # 컷·제목·??
+    whoosh(0.9, .9, .1)                                   # 병으로 천천히 다가가는 줌
     for k_, th in enumerate(Q_HIT):
         thud(th, .32) if k_ in (0, 2) else popf(th, 820, .15)
     whoosh(Q_HOLD + 0.2, .3, .12)
