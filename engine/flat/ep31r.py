@@ -19,16 +19,16 @@ DUR = NB[-1]
 b.DUR = DUR
 b.EP_TITLE = ((" ", WHITE),)
 RED = (235, 70, 50)
-Q_HOLD = 1.45                      # 여는 질문이 가운데 크게 머무는 시간 → 이후 아래로 내려가 자막 자리로
-Q_ROWS = [[[("콜라병", WHITE)], [("바닥", WHITE)]], [[("왜", WHITE)], [("꽃 모양", YEL)], [("일까요?", WHITE)]]]
-Q_HIT = [0.08, 0.40, 0.72, 0.92, 1.22]   # 말하는 박자에 맞춘 단어별 '쾅'
+Q_HOLD = 1.35                      # 여는 질문이 가운데 크게 머무는 시간 → 이후 아래로 내려가 자막 자리로
+Q_ROWS = [[[("탄산음료", WHITE)], [("병 바닥은", WHITE)]], [[("왜", WHITE)], [("이런 모양", YEL)], [("일까요?", WHITE)]]]
+Q_HIT = [0.10, 0.62, 1.15, 1.40, 1.80]   # 말하는 박자에 맞춘 단어별 '쾅'
 
 
 def hook_question(im, t, t_end):
     """여는 질문: 화면 가운데 한 단어씩 쾅 → '꽃 모양' 밑줄 → 아래 자막 자리로 미끄러져 내려가며 작아짐."""
     if t >= t_end:
         return
-    size = 104; f = F(size); tmp = ImageDraw.Draw(Image.new("RGBA", (4, 4)))
+    size = 96; f = F(size); tmp = ImageDraw.Draw(Image.new("RGBA", (4, 4)))
     mv = ease((t - Q_HOLD) / 0.35)
     ys = [820 + (1388 - 820) * mv, 962 + (1500 - 962) * mv]
     scl = 1 - 0.16 * mv
@@ -44,7 +44,7 @@ def hook_question(im, t, t_end):
                 yel = any(c == YEL for _, c in w)
                 if yel:
                     sc *= 1 + 0.05 * math.sin(t * 15)
-                    k = ease((t - 1.12) / 0.2)                     # '꽃 모양' 밑줄 쓱
+                    k = ease((t - 1.5) / 0.2)                      # '이런 모양' 밑줄 쓱
                     if k > 0:
                         d = ImageDraw.Draw(im)
                         d.rounded_rectangle((x + 6, cy + 66 * scl, x + 6 + (ww - 12) * k, cy + 80 * scl), 7, fill=YEL + (int(255 * a_out),))
