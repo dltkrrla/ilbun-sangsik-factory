@@ -121,7 +121,8 @@ def frame(t):
         for sgn in (-1, 1):
             cx0 = CX + sgn * 300
             d.arc((cx0 - 70, 640, cx0 + 70, 780), 200 if sgn < 0 else -20, 340 if sgn < 0 else 160, fill=RED + (int(255 * a2),), width=8)
-        label(d, "흔들흔들… 혼자 못 서요", CX, 1300, 52, RED, anchor="mm", a=a2)
+        label(d, "흔들흔들", 890, 390, 46, RED, anchor="mm", a=a2)
+        label(d, "혼자 못 서요", 890, 455, 46, RED, anchor="mm", a=a2)
     # 딱! + 받침 라벨
     if t >= 2.85:
         k = ease((t - 2.85) / 0.15)
@@ -133,7 +134,7 @@ def frame(t):
         d.line((CX - CUP_W // 2 + 30, 1180, 200, 1180), fill=YEL + (int(255 * a3),), width=3)
         label(d, "받침", 70, 1180, 56, YEL, a=a3)
         a4 = ease((t - 3.35) / 0.3)
-        label(d, "둥근 바닥 + 받침 = 똑바로!", CX, 1310, 54, LINE, anchor="mm", a=a4)
+        label(d, "똑바로 선다!", 880, 420, 50, LINE, anchor="mm", a=a4)
     return im.convert("RGB")
 
 if __name__ == "__main__":
