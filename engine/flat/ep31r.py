@@ -60,14 +60,14 @@ def overlay(t):
         pop(im, t, s[1] + 0.2, box_img("생수병 = 평평", 52, WHITE, INK, pad=34), 300, 520)
         pop(im, t, s[1] + 1.1, box_img("탄산 = 꽃 모양", 52, YEL, INK, pad=34), 780, 620)
     if s[2] <= t < s[3]:
-        pop(im, t, s[2] + 1.0, box_img("5~7기압", 96, YEL, INK, pad=48), 540, 640)
+        pop(im, t, s[2] + 1.0, box_img("5~7기압", 96, YEL, INK, pad=48), 420, 290)
     if s[3] <= t < s[4]:
-        pop(im, t, s[3] + 0.9, box_img("불룩!", 70, RED, WHITE, pad=40), 540, 560)
+        pop(im, t, s[3] + 0.9, box_img("불룩!", 70, RED, WHITE, pad=40), 800, 260)
     if s[4] <= t < s[5]:
-        pop(im, t, s[4] + 0.3, box_img("다리 5개 = 힘 분산", 60, YEL, INK, pad=38), 540, 560)
+        pop(im, t, s[4] + 0.3, box_img("다리 5개 = 힘 분산", 60, YEL, INK, pad=38), 540, 280)
     if s[5] <= t < s[6]:
-        pop(im, t, s[5] + 0.3, box_img("옛날 콜라병", 56, WHITE, INK, pad=34), 540, 520)
-        pop(im, t, s[5] + 2.0, box_img("받침을 따로!", 64, YEL, INK, pad=38), 540, 640)
+        pop(im, t, s[5] + 0.3, box_img("옛날 콜라병", 56, WHITE, INK, pad=34), 540, 250)
+        pop(im, t, s[5] + 2.0, box_img("받침을 따로!", 64, YEL, INK, pad=38), 860, 1130)
     if t >= s[7]:
         put(im, box_img("구독하면 매일 1분 상식", 50, YEL, INK, pad=38), 540, 1252, 1.0, 0.6 + 0.4 * back((t - s[7]) / 0.28))
     for i in range(1, len(CAPS)):
