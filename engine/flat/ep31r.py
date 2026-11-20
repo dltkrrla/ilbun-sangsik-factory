@@ -59,8 +59,6 @@ def overlay(t):
     if s[1] <= t < s[2]:
         pop(im, t, s[1] + 0.2, box_img("생수병 = 평평", 52, WHITE, INK, pad=34), 300, 520)
         pop(im, t, s[1] + 1.1, box_img("탄산 = 꽃 모양", 52, YEL, INK, pad=34), 780, 620)
-    if s[2] <= t < s[3]:
-        pop(im, t, s[2] + 1.0, box_img("5~7기압", 96, YEL, INK, pad=48), 540, 860)
     if s[3] <= t < s[4]:
         pop(im, t, s[3] + 0.9, box_img("불룩!", 70, RED, WHITE, pad=40), 800, 260)
     if s[4] <= t < s[5]:
