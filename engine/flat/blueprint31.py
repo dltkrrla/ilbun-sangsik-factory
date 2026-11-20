@@ -101,7 +101,7 @@ def frame(t):
     if a_grid < 1:
         im = Image.blend(Image.new("RGBA", (W, H), (6, 22, 46, 255)), im, a_grid)
     d = ImageDraw.Draw(im)
-    label(d, "DWG. 31-B  |  옛날 2L 콜라병", 70, 250, 34, CYAN, a=ease((t - 0.1) / 0.3) * (1 - ease((t - 2.2) / 0.15)) + ease((t - 3.05) / 0.3) * (t > 3))
+    label(d, "DWG. 31-B  |  옛날 2L 콜라병", 70, 250, 34, CYAN, a=ease((t - 0.1) / 0.3) * (1 - ease((t - 1.1) / 0.15)) + ease((t - 3.05) / 0.3) * (t > 3))
     ground(d, ease((t - 0.2) / 0.3))
     f = ease(t / 1.1)
     # 흔들림: 둥근 바닥이 식탁 위를 굴러가듯 좌우로 (1.2~2.3초), 그 뒤 멈춤
@@ -114,6 +114,16 @@ def frame(t):
     dy += (-(GROUND - (BY + R)) - LIFT) * ease((t - 2.3) / 0.3)
     dy += LIFT * ease((t - 2.8) / 0.15)
     dx = -R * math.radians(rock)                    # 구르기: 기울어진 만큼 옆으로 이동
+    def rock_at(tt):
+        if tt < 1.2: return 0.0
+        am = 10 * ease((tt - 1.2) / 0.2) * (1 - ease((tt - 2.0) / 0.3))
+        return am * math.sin((tt - 1.2) * 2 * math.pi * 1.5)
+    if 1.25 <= t <= 2.35:
+        for lag, al in ((0.10, 70), (0.20, 35)):
+            rg = rock_at(t - lag)
+            G = bottle_layer(1.0).rotate(rg, resample=Image.BICUBIC, center=(CX, BY), translate=(-R * math.radians(rg), dy))
+            G.putalpha(G.getchannel("A").point(lambda v, al=al: v * al // 255))
+            im.alpha_composite(G)
     B = bottle_layer(f)
     if abs(rock) > 0.05 or abs(dy) > 0.5:
         B = B.rotate(rock, resample=Image.BICUBIC, center=(CX, BY), translate=(dx, dy))
@@ -129,9 +139,16 @@ def frame(t):
         label(d, "둥근 바닥", 842, 1130, 50, LINE, a=a1)
     a2 = ease((t - 1.25) / 0.2) * (1 - ease((t - 2.25) / 0.2))
     if a2 > 0:
-        for sgn in (-1, 1):
-            cx0 = CX + sgn * 300
-            d.arc((cx0 - 70, 640, cx0 + 70, 780), 200 if sgn < 0 else -20, 340 if sgn < 0 else 160, fill=RED + (int(255 * a2),), width=8)
+        rr, sw = 1035, 13                                   # 바닥 접점 기준 반지름, 좌우 각도
+        px, py = CX, GROUND
+        col = RED + (int(255 * a2),)
+        pts = [(px + rr * math.sin(math.radians(g)), py - rr * math.cos(math.radians(g))) for g in [x / 10 for x in range(-sw * 10, sw * 10 + 1, 5)]]
+        d.line(pts, fill=col, width=9, joint="curve")
+        for g, sgn in ((-sw, -1), (sw, 1)):                 # 양 끝 화살촉
+            ex, ey = px + rr * math.sin(math.radians(g)), py - rr * math.cos(math.radians(g))
+            tx, ty = math.cos(math.radians(g)) * sgn, math.sin(math.radians(g)) * sgn   # 접선 방향
+            nx, ny = -ty, tx
+            d.polygon([(ex + tx * 34, ey + ty * 34), (ex + nx * 20, ey + ny * 20), (ex - nx * 20, ey - ny * 20)], fill=col)
         label(d, "흔들흔들", 890, 390, 46, RED, anchor="mm", a=a2)
         label(d, "혼자 못 서요", 890, 455, 46, RED, anchor="mm", a=a2)
     if t >= 2.95:
