@@ -19,7 +19,7 @@ b.EP_TITLE = ((" ", WHITE),)
 RED = (235, 70, 50)
 Q_HOLD = 1.5                      # 여는 질문이 가운데 크게 머무는 시간 → 이후 아래로 내려가 자막 자리로
 Q_ROWS = [[[("맥주병은", WHITE)], [("왜 하나같이", WHITE)]], [[("갈색", YEL), ("일까요?", WHITE)]]]
-Q_HIT = [0.12, 0.75, 1.36]   # 말하는 박자에 맞춘 단어별 '쾅'
+Q_HIT = [0.12, 0.78, 1.41]   # 말하는 박자에 맞춘 단어별 '쾅'
 
 
 TITLE_TAG, TITLE_BIG = "10명 중 9명은 모르는", "맥주병 갈색의 비밀"
@@ -50,6 +50,41 @@ def hook_question(im, t, t_end):
     ys = [1290, 1425]                  # 움직이지 않고 한자리에 (위쪽은 꽃 모양 바닥이 나올 자리)
     scl = 1.0
     a_out = 1 - ease((t - (t_end - 0.12)) / 0.12)
+    # 단어가 '팡' 하고 나올 때: 충격파 고리 + 사방으로 튀는 불꽃 + 반짝이 (글자 아래층)
+    pos = []
+    for words, cy in zip(Q_ROWS, ys):
+        ws = [sum(tmp.textlength(sg, font=f) for sg, _ in w) * scl for w in words]
+        sp = size * 0.26 * scl; x = 540 - (sum(ws) + sp * (len(ws) - 1)) / 2
+        for ww in ws:
+            pos.append((x + ww / 2, cy, ww)); x += ww + sp
+    fx = Image.new("RGBA", (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(fx)
+    for k_, (px, py, ww) in enumerate(pos):
+        lt = t - Q_HIT[k_]
+        if not (0 <= lt < 0.45): continue
+        big = 1.35 if k_ == len(pos) - 1 else 1.0
+        col = YEL if k_ == len(pos) - 1 else (255, 255, 255)
+        p = 1 - (1 - min(1.0, lt / 0.4)) ** 3; fa = (1 - lt / 0.45) * a_out
+        rx, ry = (ww / 2 + 30 + 120 * p) * big, (70 + 90 * p) * big           # 충격파 고리(글자 모양 따라 납작한 타원)
+        if lt < 0.14:                                                          # 터지는 순간 번쩍
+            fl = 1 - lt / 0.14; fr = (ww / 2 + 50) * (0.7 + 0.5 * p) * big
+            d.ellipse((px - fr, py - fr * 0.55, px + fr, py + fr * 0.55), fill=col + (int(150 * fl * a_out),))
+        d.ellipse((px - rx, py - ry, px + rx, py + ry), outline=col + (int(240 * fa),), width=max(3, int(18 * (1 - p))))
+        rng_ = np.random.default_rng(k_ * 7 + 1)
+        for j in range(14):                                                   # 불꽃 줄기
+            ang = j * 2 * math.pi / 14 + rng_.uniform(-0.15, 0.15)
+            r0 = (ww / 2 * abs(math.cos(ang)) + 60 * abs(math.sin(ang))) + 20 + 150 * p * big
+            ln = (95 + 55 * rng_.uniform()) * (1 - p * 0.8) * big
+            c2 = YEL if j % 2 else (255, 255, 255)
+            d.line((px + r0 * math.cos(ang), py + r0 * math.sin(ang) * 0.8, px + (r0 + ln) * math.cos(ang), py + (r0 + ln) * math.sin(ang) * 0.8),
+                   fill=c2 + (int(255 * fa),), width=11)
+        for j in range(9):                                                    # 반짝이 별
+            ang = rng_.uniform(0, 6.28); rr = (ww / 2 + 40 + 190 * p) * big; sx, sy = px + rr * math.cos(ang), py + rr * math.sin(ang) * 0.7
+            s_ = 30 * (1 - p * 0.7) * big
+            d.polygon([(sx, sy - s_), (sx + s_ * .3, sy - s_ * .3), (sx + s_, sy), (sx + s_ * .3, sy + s_ * .3), (sx, sy + s_), (sx - s_ * .3, sy + s_ * .3), (sx - s_, sy), (sx - s_ * .3, sy - s_ * .3)],
+                      fill=YEL + (int(255 * fa),))
+    if fx.getbbox():
+        from PIL import ImageFilter as _IF
+        im.alpha_composite(fx.filter(_IF.GaussianBlur(9))); im.alpha_composite(fx)
     idx = 0
     for words, cy in zip(Q_ROWS, ys):
         ws = [sum(tmp.textlength(sg, font=f) for sg, _ in w) * scl for w in words]
@@ -61,7 +96,7 @@ def hook_question(im, t, t_end):
                 yel = any(c == YEL for _, c in w)
                 if yel:
                     sc *= 1 + 0.05 * math.sin(t * 15)
-                    k = ease((t - 1.6) / 0.2)                      # '갈색' 밑줄 쓱
+                    k = ease((t - 1.55) / 0.2)                     # '갈색' 밑줄 쓱
                     if k > 0:
                         d = ImageDraw.Draw(im)
                         d.rounded_rectangle((x + 6, cy + 66 * scl, x + 6 + (ww - 12) * k, cy + 80 * scl), 7, fill=YEL + (int(255 * a_out),))
@@ -157,8 +192,14 @@ def audio(path):
     boom(0.0, .6)                                         # 첫 화면 '둥'
     riser(0.1, 1.26, .2)                                  # 맥주병으로 줌인되는 동안 차오름
     shing(Q_HIT[2] + 0.02, .13)                           # '갈색'에서 반짝
+    def pang(at, vol=.5, f=520):                         # '팡': 짧은 저음 + 터지는 소리 + 높은 팝
+        m = int(.35 * sr); tt = np.arange(m) / sr
+        kick = np.sin(2 * np.pi * np.cumsum(60 + 170 * np.exp(-tt * 35)) / sr) * env(m, .07)
+        nz = rng.standard_normal(m); hp = np.diff(np.concatenate([[0], nz])) * env(m, .025)
+        pop = np.sin(2 * np.pi * np.cumsum(f + 900 * np.exp(-tt * 50)) / sr) * env(m, .04)
+        add(at, vol * (kick + .45 * hp + .5 * pop))
     for k_, th in enumerate(Q_HIT):
-        thud(th, .32) if k_ in (0, 2) else popf(th, 820, .15)
+        pang(th, .55 if k_ < 2 else .7, (440, 560, 700)[k_])
     whoosh(Q_HOLD + 0.2, .3, .12)
     for i in range(1, len(s) - 1):
         whoosh(s[i]); popf(s[i] + 0.05, 820, .16)
@@ -177,7 +218,7 @@ def audio(path):
         v, vsr = sf.read(f"{VO}/l{i:02d}.wav")
         if v.ndim > 1: v = v.mean(1)
         if vsr != sr: v = np.interp(np.arange(int(len(v) * sr / vsr)) * vsr / sr, np.arange(len(v)), v)
-        st = int((s[i] + 0.12) * sr); v = v[: max(0, n - st)]; x[st:st + len(v)] += (1.2 if i == 0 else 0.95) * v / max(1e-6, np.abs(v).max())
+        st = int((s[i] + 0.12) * sr); v = v[: max(0, n - st)]; x[st:st + len(v)] += (1.3 if i == 0 else 0.95) * v / max(1e-6, np.abs(v).max())
     x = np.tanh(x * 1.1) * .95
     tmp = path + ".sfx.wav"
     with wave.open(tmp, "wb") as w:
