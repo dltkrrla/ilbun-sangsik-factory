@@ -8,7 +8,7 @@ from PIL import Image, ImageDraw
 import sangsik2 as b
 from sangsik2 import *
 
-VO = "/home/claude/work/vo16r"
+VO = "/home/claude/work/vo16r2"   # 0번 줄만 힘 있게 다시 읽음(길이는 기존 박자 유지)
 VOD = json.load(open(f"{VO}/meta.json"))
 NB = [0.0]
 for d in VOD:
@@ -19,7 +19,7 @@ b.EP_TITLE = ((" ", WHITE),)
 RED = (235, 70, 50)
 Q_HOLD = 1.5                      # 여는 질문이 가운데 크게 머무는 시간 → 이후 아래로 내려가 자막 자리로
 Q_ROWS = [[[("맥주병은", WHITE)], [("왜 하나같이", WHITE)]], [[("갈색", YEL), ("일까요?", WHITE)]]]
-Q_HIT = [0.12, 0.80, 1.45]   # 말하는 박자에 맞춘 단어별 '쾅'
+Q_HIT = [0.12, 0.75, 1.36]   # 말하는 박자에 맞춘 단어별 '쾅'
 
 
 TITLE_TAG, TITLE_BIG = "10명 중 9명은 모르는", "맥주병 갈색의 비밀"
@@ -135,8 +135,28 @@ def audio(path):
         add(at, vol * np.sin(2 * np.pi * np.cumsum(50 + 120 * np.exp(-tt * 30)) / sr) * env(m, .07))
     def ding(at, f=1320, vol=.16):
         m = int(.7 * sr); tt = np.arange(m) / sr; add(at, vol * (np.sin(2 * np.pi * f * tt) + .4 * np.sin(2 * np.pi * f * 2.01 * tt)) * env(m, .22))
+    def boom(at, vol=.55):                                # 시작 '둥' (깊은 저음 + 짧은 바람)
+        m = int(1.1 * sr); tt = np.arange(m) / sr
+        sub = np.sin(2 * np.pi * np.cumsum(38 + 60 * np.exp(-tt * 9)) / sr) * env(m, .35)
+        nz = rng.standard_normal(m); lp = np.zeros(m); a_ = 0.0
+        for i in range(m): a_ += .05 * (nz[i] - a_); lp[i] = a_
+        add(at, vol * (sub + 2.5 * lp * env(m, .12)))
+    def riser(at, ln, vol=.22, f0=160, f1=900):         # 줌인 동안 점점 차오르는 소리
+        m = int(ln * sr); tt = np.arange(m) / sr; k = tt / ln
+        f = f0 * (f1 / f0) ** (k ** 1.5); tone = np.sin(2 * np.pi * np.cumsum(f) / sr) + .5 * np.sin(2 * np.pi * np.cumsum(f * 1.5) / sr)
+        nz = rng.standard_normal(m); y = np.zeros(m); s_ = 0.0; c_ = .01 + .4 * k ** 2
+        for i in range(m): s_ += c_[i] * (nz[i] - s_); y[i] = s_
+        amp = k ** 2.2 * (1 - np.clip((k - .97) / .03, 0, 1))
+        add(at, vol * amp * (.35 * tone + 2.2 * y))
+    def shing(at, vol=.14):                              # 반짝 '팅'
+        m = int(.9 * sr); tt = np.arange(m) / sr
+        add(at, vol * (np.sin(2 * np.pi * 2637 * tt) + .6 * np.sin(2 * np.pi * 3951 * tt) + .3 * np.sin(2 * np.pi * 5274 * tt)) * env(m, .18))
+    def click(at, vol=.12):
+        m = int(.03 * sr); add(at, vol * rng.standard_normal(m) * env(m, .004))
     s = NB
-    whoosh(0.9, .9, .1)                                   # 병으로 천천히 다가가는 줌
+    boom(0.0, .6)                                         # 첫 화면 '둥'
+    riser(0.1, 1.26, .2)                                  # 맥주병으로 줌인되는 동안 차오름
+    shing(Q_HIT[2] + 0.02, .13)                           # '갈색'에서 반짝
     for k_, th in enumerate(Q_HIT):
         thud(th, .32) if k_ in (0, 2) else popf(th, 820, .15)
     whoosh(Q_HOLD + 0.2, .3, .12)
@@ -144,7 +164,11 @@ def audio(path):
         whoosh(s[i]); popf(s[i] + 0.05, 820, .16)
     popf(s[1] + 0.91, 1000, .2)                          # 자외선·파란 빛
     thud(s[2] + 1.57, .3); popf(s[2] + 1.86, 900, .18)   # 쪼개짐
-    thud(s[4] + 2.15, .35); ding(s[4] + 2.19, 1320)      # 10억분의 1g
+    for i_ in range(11): click(s[4] + (0.3 + 0.075 * i_ + 0.22) / 1.024, .06)   # 숫자 굴러가다 멈춤
+    riser(s[4] + 0.75 / 1.024, 1.3, .13, 220, 1200)      # 병 속으로 파고드는 줌
+    thud(s[4] + 2.12 / 1.024, .3)
+    click(s[4] + 2.42 / 1.024, .22); popf(s[4] + 2.45 / 1.024, 1200, .12)    # 조준 '찰칵'
+    ding(s[4] + 2.77 / 1.024, 1320)                      # 10억분의 1g
     ding(s[5] + 2.55, 990)                               # 30분
     thud(s[6] + 1.13, .4); popf(s[6] + 1.57, 900, .18)   # 막았다
     ding(s[8], 1319); ding(s[8] + 0.14, 1760)
@@ -153,7 +177,7 @@ def audio(path):
         v, vsr = sf.read(f"{VO}/l{i:02d}.wav")
         if v.ndim > 1: v = v.mean(1)
         if vsr != sr: v = np.interp(np.arange(int(len(v) * sr / vsr)) * vsr / sr, np.arange(len(v)), v)
-        st = int((s[i] + 0.12) * sr); v = v[: max(0, n - st)]; x[st:st + len(v)] += 0.95 * v / max(1e-6, np.abs(v).max())
+        st = int((s[i] + 0.12) * sr); v = v[: max(0, n - st)]; x[st:st + len(v)] += (1.2 if i == 0 else 0.95) * v / max(1e-6, np.abs(v).max())
     x = np.tanh(x * 1.1) * .95
     tmp = path + ".sfx.wav"
     with wave.open(tmp, "wb") as w:

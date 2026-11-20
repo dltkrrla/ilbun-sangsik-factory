@@ -218,6 +218,185 @@ def filt(t):
         callout(c, W / 2, 1288, "갈색 유리가 빛을 막아요", 52, ORANGE, ease((t - 1.6) / 0.12), 0.7 + 0.3 * back((t - 1.6) / 0.3))
     return intro_fade(c.compose(base, glow=0.8), t).convert("RGB")
 
+
+# ---------- 16-C v2: 병 속으로 파고드는 줌 → 분자들 사이 단 하나의 '범인' ----------
+from PIL import ImageDraw as _ID
+def _bez(p0, p1, p2, p3, n=18):
+    return [((1-u)**3*p0[0]+3*(1-u)**2*u*p1[0]+3*(1-u)*u*u*p2[0]+u**3*p3[0],
+             (1-u)**3*p0[1]+3*(1-u)**2*u*p1[1]+3*(1-u)*u*u*p2[1]+u**3*p3[1]) for u in np.linspace(0, 1, n)]
+BH = 640; BW = BH * 0.2; NK = BH * 0.066
+def _bottle_path():
+    """병 오른쪽 반 윤곽(바닥 가운데 = 0,0, 위쪽이 -y) → 좌우 대칭으로 이어 붙임."""
+    r = [(NK, -BH), (NK, -BH * 0.70)]
+    r += _bez((NK, -BH * 0.70), (NK, -BH * 0.58), (BW, -BH * 0.58), (BW, -BH * 0.45))[1:]
+    r += [(BW, -BH * 0.05)]
+    r += _bez((BW, -BH * 0.05), (BW, -BH * 0.01), (BW * 0.9, 0), (BW * 0.78, 0), 8)[1:]
+    l = [(-x, y) for x, y in reversed(r)]
+    return r + l
+BPATH = _bottle_path()
+LIQ = -BH * 0.74                                          # 맥주 높이(목 아래쪽)
+FOC = (0.0, -BH * 0.24)                                   # 줌이 파고드는 곳 = '범인' 분자 자리
+_rng = np.random.default_rng(16)
+BUB = [(_rng.uniform(-0.85, 0.85) * BW, _rng.uniform(-0.44, -0.03) * BH, _rng.uniform(1.2, 4.5), _rng.uniform(0, 1)) for _ in range(70)]
+MOL_SP = 118                                              # 마지막 화면에서 분자 간격(px)
+_g = np.arange(-34, 35)
+MOL = [(i * MOL_SP + _rng.uniform(-40, 40), j * MOL_SP * 0.92 + _rng.uniform(-40, 40), _rng.uniform(15, 24), _rng.uniform(0, 6.28))
+       for i in _g for j in _g if not (i == 0 and j == 0)]
+MOL = [m + (int(_rng.integers(1, 4)),) for m in MOL]
+_g2 = np.arange(-40, 41)
+MOL2 = [(i * 76 + _rng.uniform(-30, 30), j * 70 + _rng.uniform(-30, 30), _rng.uniform(7, 11), _rng.uniform(0, 6.28)) for i in _g2 for j in _g2]
+BOKEH = [(_rng.uniform(0, 6.28), _rng.uniform(0, 1), _rng.uniform(70, 150)) for _ in range(9)]
+def _radial(col, a0, rad, power=1.6):
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    return lambda cx, cy, a: None
+_YY, _XX = np.mgrid[0:H // 4, 0:W // 4].astype(np.float32)
+def _glow_img(cx, cy, a):
+    d = np.sqrt((_XX * 4 - cx) ** 2 + ((_YY * 4 - cy) / 1.1) ** 2) / 620
+    al = np.clip(1 - d, 0, 1) ** 1.8 * 150 * a
+    arr = np.zeros((H // 4, W // 4, 4), np.uint8); arr[..., 0] = 255; arr[..., 1] = 205; arr[..., 2] = 110; arr[..., 3] = al.astype(np.uint8)
+    return Image.fromarray(arr, "RGBA").resize((W, H), Image.BILINEAR)
+_d = np.sqrt(((_XX * 4 - W / 2) / (W * 0.62)) ** 2 + ((_YY * 4 - H * 0.42) / (H * 0.55)) ** 2)
+_v = np.zeros((H // 4, W // 4, 4), np.uint8); _v[..., 0] = 14; _v[..., 1] = 8; _v[..., 2] = 4
+_v[..., 3] = (np.clip(_d - 0.45, 0, 1) ** 1.3 * 255).clip(0, 235).astype(np.uint8)
+VIGN = Image.fromarray(_v, "RGBA").resize((W, H), Image.BILINEAR)
+def _atom(c, x, y, r, base, hi, a, w):
+    c.circle(x, y, r, fill=base, outline=hi, w=w, a=a)
+    c.circle(x - r * 0.32, y - r * 0.34, r * 0.3, fill=(255, 246, 225), a=a * 0.75)
+AMB_D, AMB_L = np.array([120, 58, 12], np.float32), np.array([235, 150, 55], np.float32)
+
+def _zoom(t):
+    k = ease((t - 0.75) / 1.65); k = k ** 1.6
+    return math.exp(math.log(420) * k)
+
+def _focus_screen(t):
+    k = ease((t - 0.6) / 1.4)
+    return 540, 905 + (760 - 905) * k
+
+def _xf(t):
+    z = _zoom(t); fx, fy = _focus_screen(t)
+    return z, (lambda x, y: (fx + (x - FOC[0]) * z, fy + (y - FOC[1]) * z))
+
+def _liquid_layer(t, a):
+    """병 속 맥주: 가로 그러데이션(가장자리 진하게) + 빛 줄기. 1배 크기로 그림."""
+    z, P = _xf(t)
+    m = Image.new("L", (W, H), 0); d = _ID.Draw(m)
+    pts = [P(x, max(y, LIQ)) for x, y in BPATH]
+    d.polygon(pts, fill=255)
+    cx = P(0, 0)[0]; half = BW * z
+    u = np.clip(np.abs(np.arange(W, dtype=np.float32) - cx) / max(half, 1), 0, 1)
+    shade = (1 - u ** 2.2)[None, :, None]
+    col = AMB_D + (AMB_L - AMB_D) * shade
+    vy = np.linspace(0, 1, H, dtype=np.float32)[:, None, None]
+    col = col * (0.92 + 0.12 * (1 - vy))
+    arr = np.zeros((H, W, 4), np.float32); arr[..., :3] = col
+    arr[..., 3] = np.array(m, np.float32) * 0.62 * a
+    return Image.fromarray(arr.astype(np.uint8), "RGBA")
+
+def _odometer(c, t, y=400, size=84):
+    s = "0.000 000 001 g"; f = F(size); total = f.getlength(s); x0 = W / 2 - total / 2
+    for i, ch in enumerate(s):
+        ti = 0.30 + 0.075 * i
+        if t < ti or ch == " ": continue
+        cw = f.getlength(ch); x = x0 + f.getlength(s[:i]) + cw / 2
+        settle = ti + 0.22; a = ease((t - ti) / 0.08)
+        if ch.isdigit() and t < settle:
+            shown = str(int((t - ti) * 46 + i * 3) % 10); dy = 10 * math.sin((t - ti) * 60)
+            c.text(x, y + dy, shown, size, LINE, a * 0.55, stroke=4)
+            continue
+        is_one = (ch == "1")
+        sc = 1.0 + (0.35 * (1 - back((t - settle) / 0.3)) if is_one else 0)
+        col = YEL if is_one else (CYAN if ch == "g" else LINE)
+        c.text(x, y, ch, size * sc, col, a, stroke=4)
+
+def scale(t):
+    base = BG.copy(); c = Canvas(); title(c, t, "DWG. 16-C  |  얼마나 조금이면 냄새가 날까")
+    z, P = _xf(t)
+    # 1) 맥주(그러데이션) — 병이 화면을 덮어도 계속 깔림
+    fill_a = ease((t - 0.25) / 0.45)
+    base.alpha_composite(_liquid_layer(t, fill_a))
+    # 2) 병 윤곽: 그려지듯 나타남 → 줌에 따라 화면 밖으로
+    if z < 60:
+        pts = [P(x, y) for x, y in BPATH]
+        L = np.cumsum([0] + [math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]) for i in range(len(pts) - 1)])
+        k = eout(t / 0.55) * L[-1]; part = [p for p, l in zip(pts, L) if l <= k]
+        oa = 1 - ease((z - 25) / 35)
+        c.line(part, LINE, 6, oa)
+        cap = (P(-NK - 7, -BH - 20), P(NK + 7, -BH + 4))
+        c.rrect((cap[0][0], cap[0][1], cap[1][0], cap[1][1]), 8 * min(z, 4), fill=(190, 196, 210), a=oa * ease((t - 0.45) / 0.2))
+        hl = [P(-BW * 0.66, -BH * 0.43), P(-BW * 0.66, -BH * 0.08)]          # 유리 반사광
+        c.line(hl, (255, 255, 255), 9 * z, oa * 0.28 * fill_a)
+        sx, sy = P(0, LIQ)
+        c.line([P(-NK + 3, LIQ), P(NK - 3, LIQ)], (255, 244, 220), 4, oa * fill_a * 0.9)
+        la = fill_a * (1 - ease((t - 0.75) / 0.25))
+        c.text(540, P(0, 0)[1] + 60, "맥주 한 병", 44, LINE, la, stroke=3)
+    # 3) 탄산 방울: 줌인하면 옆으로 커지며 스쳐 지나감
+    for (bx, by, br, ph) in BUB:
+        yy = by - ((t * 26 + ph * 200) % (BH * 0.4)) * 0.3
+        if yy < LIQ: continue
+        x, y = P(bx, yy); r = br * z
+        if r > 420 or r < 1 or not (-r < x < W + r and -r < y < H + r): continue
+        a = fill_a * 0.85 * (1 - ease((r - 160) / 260))
+        c.circle(x, y, r, outline=(255, 240, 210), w=max(2, min(6, r * 0.12)), a=a * 0.8)
+        c.circle(x - r * 0.35, y - r * 0.35, r * 0.18, fill=(255, 255, 255), a=a * 0.7)
+    # 4) 빠르게 파고드는 속도선
+    sp = ease((t - 1.0) / 0.4) * (1 - ease((t - 2.05) / 0.3))
+    if sp > 0:
+        fx, fy = _focus_screen(t)
+        for i in range(36):
+            ang = i * 2 * math.pi / 36 + (i % 3) * 0.05
+            ph = (t * 2.6 + i * 0.137) % 1.0
+            r0 = 160 + ph * 900; r1 = r0 + 90 + 160 * ph
+            c.line([(fx + r0 * math.cos(ang), fy + r0 * math.sin(ang)), (fx + r1 * math.cos(ang), fy + r1 * math.sin(ang))],
+                   LINE, 3, sp * 0.32 * (1 - ph))
+    # 5) 분자들 (줌 끝 무렵 나타남) — 뒤층(작고 흐림) + 앞층(원자 2~3개 덩어리) + 가운데 노란 '범인'
+    mz = z / 420; ma = ease((math.log(z) - math.log(90)) / (math.log(300) - math.log(90)))
+    fx, fy = _focus_screen(t)
+    inside = ease((math.log(z) - math.log(8)) / (math.log(40) - math.log(8)))
+    if inside > 0:
+        base.alpha_composite(Image.blend(Image.new("RGBA", (W, H), (0, 0, 0, 0)), _glow_img(fx, fy, 1.0), inside))
+    if ma > 0:
+        m2 = mz * 0.55
+        for (mx, my, mr, ph) in MOL2:
+            x = fx + (mx + 4 * math.sin(t * 2 + ph)) * m2; y = fy + (my + 4 * math.cos(t * 2.2 + ph)) * m2
+            if not (-20 < x < W + 20 and 240 < y < 1280): continue
+            c.circle(x, y, mr * m2, fill=(150, 95, 45), a=ma * 0.45 * (1 - ease((abs(y - 760) - 250) / 260)))
+        for (mx, my, mr, ph, na) in MOL:
+            x = fx + (mx + 7 * math.sin(t * 3 + ph)) * mz; y = fy + (my + 7 * math.cos(t * 2.6 + ph)) * mz; r = mr * mz
+            if not (-80 < x < W + 80 and 240 < y < 1280): continue
+            edge = 1 - ease((abs(y - 760) - 250) / 260)
+            rot = ph + t * 0.9
+            for k_ in range(na):
+                ox = math.cos(rot + k_ * 2.1) * r * 0.95 * (na > 1); oy = math.sin(rot + k_ * 2.1) * r * 0.95 * (na > 1)
+                _atom(c, x + ox, y + oy, r * (1 if k_ == 0 else 0.78), (120, 70, 30), (255, 214, 150), ma * 0.8 * edge, max(1.5, 2.5 * mz))
+        cr = 30 * mz * (1 + 0.07 * math.sin(t * 9)); rot = t * 1.4
+        for k_, (dx, dy, rr) in enumerate(((0, 0, 1.0), (1.05, -0.35, 0.7), (-0.6, 0.95, 0.62))):   # 노란 범인 분자
+            ca, sa = math.cos(rot), math.sin(rot)
+            _atom(c, fx + (dx * ca - dy * sa) * cr, fy + (dx * sa + dy * ca) * cr, cr * rr, YEL, (255, 250, 215), ma, 3)
+        for i in range(2):                               # 냄새 퍼지는 고리
+            ph = (t * 1.3 + i * 0.5) % 1.0
+            c.circle(fx, fy, cr * 1.6 + 20 + 130 * ph, outline=YEL, w=3, a=ma * (1 - ph) * ease((t - 2.4) / 0.2))
+    if inside > 0:
+        base.alpha_composite(Image.blend(Image.new("RGBA", (W, H), (0, 0, 0, 0)), VIGN, inside))
+        for (ang, ph, br) in BOKEH:                     # 앞을 스쳐 가는 흐린 방울(깊이감)
+            p = (t * 0.45 + ph) % 1.0; rr = 250 + p * 700
+            x = fx + rr * math.cos(ang); y = fy + rr * math.sin(ang) * 1.2
+            c.circle(x, y, br * (0.7 + p), fill=(255, 225, 170), a=0.035 * inside * math.sin(math.pi * p))
+    # 6) 조준 괄호가 '찰칵' 조여들며 고정 + 이름표
+    if t > 2.3:
+        k = back((t - 2.3) / 0.35); s_ = 230 - 140 * k; a = ease((t - 2.3) / 0.12)
+        for sx_, sy_ in ((-1, -1), (1, -1), (1, 1), (-1, 1)):
+            x0, y0 = fx + sx_ * s_, fy + sy_ * s_
+            c.line([(x0, y0 - sy_ * 44), (x0, y0), (x0 - sx_ * 44, y0)], YEL, 7, a)
+        tag_a = ease((t - 2.55) / 0.15)
+        c.rrect((fx - 150, fy - s_ - 92, fx + 150, fy - s_ - 30), 31, fill=(8, 26, 56), outline=YEL, w=3, a=tag_a * 0.95)
+        c.text(fx, fy - s_ - 63, "일광취 성분", 38, YEL, tag_a)
+    # 7) 위 숫자(오도미터) + 아래 큰 강조
+    c.rrect((120, 340, 960, 462), 30, fill=(6, 20, 44), a=0.55 * ease((t - 0.2) / 0.3))
+    _odometer(c, t)
+    if t > 2.75:
+        callout(c, W / 2, 1150, "10억분의 1g", 74, YEL, ease((t - 2.75) / 0.12), 0.7 + 0.3 * back((t - 2.75) / 0.3))
+    return intro_fade(c.compose(base, glow=0.85), t).convert("RGB")
+
 SCENES = {"sun": sun, "hop": hop, "scale": scale, "timer": timer, "filter": filt}
 if __name__ == "__main__":
     fn = SCENES[sys.argv[1]]; out = sys.argv[2]
