@@ -106,7 +106,8 @@ def calc(t0):
     # 큰 막대: 7만 원 중 20%
     bx0, bx1, by = 90, 990, 720
     k1 = ease((t - 1.9) / 0.6)
-    c.rrect((bx0, by, bx0 + (bx1 - bx0) * k1, by + 90), 20, fill=(40, 80, 150), outline=LINE, w=3, a=a0)
+    if k1 > 0.03:
+        c.rrect((bx0, by, bx0 + (bx1 - bx0) * k1, by + 90), 20, fill=(40, 80, 150), outline=LINE, w=3, a=a0)
     c.text(bx0 + 24, by + 45, "교통비 70,000원", 36, LINE, a0 * k1, anchor="lm")
     k2 = ease((t - 2.6) / 0.5)
     if k2 > 0:
