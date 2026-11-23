@@ -52,7 +52,7 @@ def drop(c, x, y, s, a=1.0, col=ALC):
 # ---------------------------------------------------------------- 1. 알코올이 껍질에 튕김
 def shell(t):
     base = BG.copy(); c = Canvas(); title(c, t, "DWG. 47-A  |  노로바이러스 vs 알코올")
-    a0 = ease(t / 0.25); vx, vy, R = 540, 745, 215
+    a0 = ease(t / 0.25); vx, vy, R = 540, 700, 215
     sh = ease((t - 0.2) / 0.7)
     for rr_, al in ((R * 1.75, 0.05), (R * 1.5, 0.07)):                       # 은은한 후광
         c.circle(vx, vy, rr_, fill=(40, 120, 70), a=al * a0)
@@ -80,10 +80,10 @@ def shell(t):
             if kk < 0.4:
                 xmark(c, sx, ys - 46, 24, HOT, 1 - kk / 0.4)
     # 아래 비교 카드 2장
-    cy0, cy1 = 1050, 1270
+    cy0, cy1 = 990, 1195
     pa = ease((t - 0.3) / 0.3)
     card(c, 70, cy0, 510, cy1, pa * a0, col=(150, 130, 230)); card(c, 570, cy0, 1010, cy1, pa * a0, col=VIR_D)
-    gx, gy, gr = 290, 1140, 56
+    gx, gy, gr = 290, 1080, 56
     gk = (t - 1.3) / 0.35
     if gk < 1:
         wob = 1 + 0.04 * math.sin(t * 9)
@@ -100,16 +100,16 @@ def shell(t):
                 c.circle(gx + rd * math.cos(ang), gy + rd * math.sin(ang), 11 * (1 - pk) + 3, fill=(190, 170, 250), a=1 - pk)
         else:
             xmark(c, gx, gy, 36, HOT, 0.95)
-    c.text(290, 1236, "일반 균 → 터짐", 34, (200, 185, 250), a0)
+    c.text(290, 1166, "일반 균 → 터짐", 34, (200, 185, 250), a0)
     vk = ease((t - 1.5) / 0.3)
-    virus(c, 790, 1140, 40 + 0, a0, t, shell=sh, spikes=10)
+    virus(c, 790, 1080, 40 + 0, a0, t, shell=sh, spikes=10)
     if t > 1.55:
         for i_ in range(3):
             kk = ((t - 1.55 - 0.18 * i_) % 0.55) / 0.55
-            drop(c, 790 + (-30 + 30 * i_), 1060 + 50 * kk, 0.45, (1 - kk) * 0.8)
-    c.text(790, 1236, "노로바이러스 → 버팀", 34, VIR, a0)
+            drop(c, 790 + (-30 + 30 * i_), 1000 + 50 * kk, 0.45, (1 - kk) * 0.8)
+    c.text(790, 1166, "노로바이러스 → 버팀", 34, VIR, a0)
     if t > 2.1:
-        callout(c, W / 2, 1345, "알코올이 안 통해요!", 62, HOT, ease((t - 2.1) / 0.12), 0.7 + 0.3 * back((t - 2.1) / 0.3))
+        callout(c, W / 2, 1255, "알코올이 안 통해요!", 62, HOT, ease((t - 2.1) / 0.12), 0.7 + 0.3 * back((t - 2.1) / 0.3))
     return intro_fade(c.compose(base, glow=0.85), t).convert("RGB")
 
 
@@ -162,8 +162,8 @@ def soap(t):
     c.text(cx, cy - 8, f"{int(30 * prog)}", 130, YEL if prog < 1 else GREEN, a0, stroke=4)
     c.text(cx, cy + 90, "초", 42, LINE, a0)
     if t > 2.3:
-        callout(c, W / 2, 1320, "비누로 30초 넘게!", 62, GREEN, ease((t - 2.3) / 0.12), 0.7 + 0.3 * back((t - 2.3) / 0.3))
-    c.text(70, 1250, "비누 분자가 바이러스를 감싸서 물에 씻겨 가요", 30, LINE, a0 * 0.9, anchor="lm")
+        callout(c, W / 2, 1255, "비누로 30초 넘게!", 62, GREEN, ease((t - 2.3) / 0.12), 0.7 + 0.3 * back((t - 2.3) / 0.3))
+    c.text(70, 1170, "비누 분자가 바이러스를 감싸서 물에 씻겨 가요", 30, LINE, a0 * 0.9, anchor="lm")
     return intro_fade(c.compose(base, glow=0.8), t).convert("RGB")
 
 
@@ -172,7 +172,7 @@ def door(t):
     base = BG.copy(); c = Canvas(); title(c, t, "DWG. 47-C  |  문고리 위 바이러스 (옆면)")
     a0 = ease(t / 0.25)
     # 문(왼쪽 옆면) + 문고리판 + 목 + 둥근 손잡이
-    c.rrect((60, 320, 250, 1000), 14, fill=(84, 110, 140), outline=(150, 180, 210), w=3, a=a0)
+    c.rrect((60, 320, 250, 930), 14, fill=(84, 110, 140), outline=(150, 180, 210), w=3, a=a0)
     c.rrect((250, 560, 290, 740), 10, fill=(176, 132, 60), outline=(240, 200, 120), w=3, a=a0)
     c.rrect((290, 630, 470, 670), 10, fill=(150, 110, 46), outline=(240, 200, 120), w=3, a=a0)
     kx, ky, R = 660, 650, 205
@@ -185,7 +185,7 @@ def door(t):
         puls = 1 + 0.12 * math.sin(t * 7 + i * 1.7)
         virus(c, kx + R * px, ky + R * py, 26 * puls, a0 * ease((t - 0.2 - 0.05 * i) / 0.2), t + i, shell=0.0, spikes=8)
     for d in range(3):                                          # 사흘 달력
-        bx = 200 + 340 * d; by = 1130
+        bx = 200 + 340 * d; by = 1060
         on = (t - 0.3) / 0.75 >= d
         col = YEL if on else DIM
         pk = back((t - 0.3 - 0.75 * d) / 0.3) if on else 0.0
@@ -195,7 +195,7 @@ def door(t):
         if on:
             virus(c, bx, by + 26, 30 * max(pk, 0.05), 1.0, t + d, shell=0.0, spikes=8)
     if t > 2.1:
-        callout(c, W / 2, 1330, "문고리에서도 사흘!", 62, YEL, ease((t - 2.1) / 0.12), 0.7 + 0.3 * back((t - 2.1) / 0.3))
+        callout(c, W / 2, 1255, "문고리에서도 사흘!", 62, YEL, ease((t - 2.1) / 0.12), 0.7 + 0.3 * back((t - 2.1) / 0.3))
     return intro_fade(c.compose(base, glow=0.8), t).convert("RGB")
 
 
@@ -204,7 +204,7 @@ def bleach(t):
     base = BG.copy(); c = Canvas(); title(c, t, "DWG. 47-D  |  락스 희석 (오염 물품 닦기)")
     a0 = ease(t / 0.25)
     # 양동이 (사다리꼴) + 물 채워짐
-    bx0, bx1, by0, by1 = 330, 750, 640, 1010
+    bx0, bx1, by0, by1 = 330, 750, 580, 940
     lvl = ease((t - 0.8) / 1.5)
     top_l, top_r, bot_l, bot_r = bx0, bx1, bx0 + 50, bx1 - 50
     c.poly([(top_l, by0), (top_r, by0), (bot_r, by1), (bot_l, by1)], (16, 44, 84), a0)
@@ -228,7 +228,7 @@ def bleach(t):
         c.text(540, 370, "락스  1", 56, YEL, a0, stroke=3)
     # 눈금띠: 노랑 1칸 + 파랑 50칸 (한 줄, 51칸)
     n_on = int(50 * ease((t - 0.8) / 1.6))
-    x0, cw = 40, 20; yb = 1130
+    x0, cw = 40, 20; yb = 1020
     c.rrect((x0, yb, x0 + cw - 2, yb + 70), 4, fill=YEL, a=a0 * back((t - 0.3) / 0.3))
     for n in range(50):
         xx = x0 + cw * (n + 1)
@@ -239,7 +239,7 @@ def bleach(t):
     c.text(x0 + 10, yb - 28, "1", 36, YEL, a0, anchor="mm", stroke=2)
     c.text(540, yb + 112, "물 50", 50, ALC, a0 * ease((t - 0.8) / 0.3), stroke=3)
     if t > 2.5:
-        callout(c, W / 2, 1345, "락스 1 : 물 50", 64, YEL, ease((t - 2.5) / 0.12), 0.7 + 0.3 * back((t - 2.5) / 0.3))
+        callout(c, W / 2, 1255, "락스 1 : 물 50", 64, YEL, ease((t - 2.5) / 0.12), 0.7 + 0.3 * back((t - 2.5) / 0.3))
     return intro_fade(c.compose(base, glow=0.8), t).convert("RGB")
 
 
@@ -282,7 +282,7 @@ def heat(t):
             virus(c, ox + qx, oy + qy, 22, a0 * life, t + i, shell=0.0, spikes=8)
         if dead and t < 2.3 + 0.05 * i:
             xmark(c, ox + qx, oy + qy, 22, HOT, 1 - ease((t - 2.0 - 0.05 * i) / 0.3))
-    tx, ty0, ty1 = 200, 1100, 420
+    tx, ty0, ty1 = 200, 1060, 420
     c.rrect((tx - 36, ty1 - 20, tx + 36, ty0 + 20), 36, fill=(10, 30, 60), outline=LINE, w=4, a=a0)
     hy = ty0 - (ty0 - ty1) * fr
     col = mix(COLD, HOT, fr)
@@ -292,7 +292,7 @@ def heat(t):
     c.line([(tx + 44, y85), (tx + 150, y85)], YEL, 4, a0)
     c.text(tx + 160, y85, "85℃", 42, YEL, a0, anchor="lm", stroke=3)
     c.text(tx, ty1 - 58, f"{int(temp)}℃", 48, mix(LINE, YEL, fr), a0, stroke=3)
-    cx, cy, rr = 645, 1110, 105
+    cx, cy, rr = 645, 1050, 100
     c.circle(cx, cy, rr, outline=DIM, w=14, a=a0 * 0.8)
     pr = ease((t - 1.8) / 1.0)
     for k_ in range(int(40 * pr)):
@@ -300,7 +300,7 @@ def heat(t):
         c.line([(cx + rr * math.cos(a1), cy + rr * math.sin(a1)), (cx + rr * math.cos(a2), cy + rr * math.sin(a2))], GREEN, 16, 1)
     c.text(cx, cy - 4, "1분", 52, LINE if pr < 1 else GREEN, a0 * (0.5 + 0.5 * pr), stroke=3)
     if t > 2.9:
-        callout(c, W / 2, 1340, "85℃에서 1분 넘게!", 60, YEL, ease((t - 2.9) / 0.12), 0.7 + 0.3 * back((t - 2.9) / 0.3))
+        callout(c, W / 2, 1255, "85℃에서 1분 넘게!", 60, YEL, ease((t - 2.9) / 0.12), 0.7 + 0.3 * back((t - 2.9) / 0.3))
     return intro_fade(c.compose(base, glow=0.8), t).convert("RGB")
 
 
